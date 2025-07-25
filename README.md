@@ -40,84 +40,69 @@ The EA leverages Parabolic SAR, two Exponential Moving Averages, and a user-defi
 
 See `Technical_Documentation.md` for a detailed technical description of the EA logic and implementation.
 ## 📝 Critique & Compliance Review
-        <h3>1. Explicitness of Client Requirements</h3>
-        <ul>
-            <li><b>a. Golden Candle Logic</b>
-                <ul>
-                    <li>✔️ The EA detects Golden Candles using Parabolic SAR and price action, as specified.</li>
-                    <li>✔️ It only starts trading after the first Golden Candle appears, as now required.</li>
-                    <li>✔️ It draws a rectangle on the chart for each Golden Candle, making detection explicit.</li>
-                </ul>
-            </li>
-            <li><b>b. Entry Logic</b>
-                <ul>
-                    <li>✔️ Entry is only allowed after a Golden Candle appears.</li>
-                    <li>✔️ Both Buy and Sell entries are handled, with correct calculation of entry, SL, and TP.</li>
-                    <li>✔️ EMA cross entries are implemented, with fallback to ATR if GoldenCandleSize is not set.</li>
-                </ul>
-            </li>
-            <li><b>c. Lot Progression</b>
-                <ul>
-                    <li>✔️ Lot progression table is implemented and capped.</li>
-                    <li>✔️ Lot index advances on SL, resets on TP, and is logged.</li>
-                </ul>
-            </li>
-            <li><b>d. Chart Visuals</b>
-                <ul>
-                    <li>✔️ Entry, SL, and profit levels are drawn on the chart.</li>
-                    <li>✔️ Golden Candle rectangles are drawn for visual verification.</li>
-                </ul>
-            </li>
-            <li><b>e. Logging and Debugging</b>
-                <ul>
-                    <li>✔️ All key actions (setup, entry, exit, errors, SL/TP adjustments, waiting for Golden Candle) are logged to a CSV file and the Experts tab.</li>
-                    <li>✔️ SL/TP distance and StopLevel fallback are logged for broker compliance.</li>
-                </ul>
-            </li>
-            <li><b>f. Robustness</b>
-                <ul>
-                    <li>✔️ OrderSend is retried up to 3 times.</li>
-                    <li>✔️ SL/TP are adjusted if too close to price, with fallback if StopLevel is zero.</li>
-                    <li>✔️ MagicNumber is used for trade identification.</li>
-                </ul>
-            </li>
-            <li><b>g. User Adjustability</b>
-                <ul>
-                    <li>✔️ All key parameters are extern and user-adjustable.</li>
-                </ul>
-            </li>
-        </ul>
-        <h3>2. Areas for Improvement or Clarification</h3>
-        <ul>
-            <li><b>a. Golden Candle Detection</b><br>
-                The EA only looks for the most recent Golden Candle (from shift=1). If multiple Golden Candles appear in history, only the latest is considered for entry. This is generally correct, but if the client wants to trade every Golden Candle, a loop or queue would be needed.
-            </li>
-            <li><b>b. EMA Cross Logic</b><br>
-                EMA cross entries are allowed on every bar after the first Golden Candle, not just immediately after a Golden Candle. If the client wants EMA cross entries only when a Golden Candle is present, this logic should be tightened.
-            </li>
-            <li><b>c. Trade Management</b><br>
-                The EA only manages one trade at a time (<code>inTrade</code> flag). If the client wants multiple simultaneous trades (e.g., grid or scaling), this would need to be expanded.
-            </li>
-            <li><b>d. Persistent State</b><br>
-                The <code>goldenCandleAppeared</code> flag is not persistent across EA restarts or chart reloads. If the EA is restarted, it will re-detect the first Golden Candle. If true persistence is required, this should be saved to a file or GlobalVariable.
-            </li>
-            <li><b>e. Market Gaps and Slippage</b><br>
-                There is no explicit handling for market gaps or slippage. This is typical for most EAs, but if the client wants extra safety, additional checks could be added.
-            </li>
-            <li><b>f. Parameter Change Logging</b><br>
-                The EA logs the initial setup, but does not log if the user changes parameters during runtime. If this is required, periodic or event-driven logging of parameter changes should be added.
-            </li>
-            <li><b>g. Error Handling</b><br>
-                The EA logs errors, but does not halt or alert the user if repeated errors occur. For unattended use, consider adding alerts or more robust error recovery.
-            </li>
-        </ul>
-        <h3>3. Documentation and Transparency</h3>
-        <ul>
-            <li>✔️ The EA is well-instrumented for verification: all key events are logged, and chart objects make the logic visible.</li>
-            <li>✔️ The code is readable and parameters are explicit.</li>
-            <li>❓ If the client wants a user manual or more detailed in-code comments, this could be expanded.</li>
-        </ul>
-        <h3>4. Summary Table</h3>
+### 1. Explicitness of Client Requirements
+
+**a. Golden Candle Logic**
+
+- ✔️ The EA detects Golden Candles using Parabolic SAR and price action, as specified.
+- ✔️ It only starts trading after the first Golden Candle appears, as now required.
+- ✔️ It draws a rectangle on the chart for each Golden Candle, making detection explicit.
+
+**b. Entry Logic**
+
+- ✔️ Entry is only allowed after a Golden Candle appears.
+- ✔️ Both Buy and Sell entries are handled, with correct calculation of entry, SL, and TP.
+- ✔️ EMA cross entries are implemented, with fallback to ATR if GoldenCandleSize is not set.
+
+**c. Lot Progression**
+
+- ✔️ Lot progression table is implemented and capped.
+- ✔️ Lot index advances on SL, resets on TP, and is logged.
+
+**d. Chart Visuals**
+
+- ✔️ Entry, SL, and profit levels are drawn on the chart.
+- ✔️ Golden Candle rectangles are drawn for visual verification.
+
+**e. Logging and Debugging**
+
+- ✔️ All key actions (setup, entry, exit, errors, SL/TP adjustments, waiting for Golden Candle) are logged to a CSV file and the Experts tab.
+- ✔️ SL/TP distance and StopLevel fallback are logged for broker compliance.
+
+**f. Robustness**
+
+- ✔️ OrderSend is retried up to 3 times.
+- ✔️ SL/TP are adjusted if too close to price, with fallback if StopLevel is zero.
+- ✔️ MagicNumber is used for trade identification.
+
+**g. User Adjustability**
+
+- ✔️ All key parameters are extern and user-adjustable.
+
+### 2. Areas for Improvement or Clarification
+
+- **a. Golden Candle Detection:**
+  - The EA only looks for the most recent Golden Candle (from shift=1). If multiple Golden Candles appear in history, only the latest is considered for entry. This is generally correct, but if the client wants to trade every Golden Candle, a loop or queue would be needed.
+- **b. EMA Cross Logic:**
+  - EMA cross entries are allowed on every bar after the first Golden Candle, not just immediately after a Golden Candle. If the client wants EMA cross entries only when a Golden Candle is present, this logic should be tightened.
+- **c. Trade Management:**
+  - The EA only manages one trade at a time (`inTrade` flag). If the client wants multiple simultaneous trades (e.g., grid or scaling), this would need to be expanded.
+- **d. Persistent State:**
+  - The `goldenCandleAppeared` flag is not persistent across EA restarts or chart reloads. If the EA is restarted, it will re-detect the first Golden Candle. If true persistence is required, this should be saved to a file or GlobalVariable.
+- **e. Market Gaps and Slippage:**
+  - There is no explicit handling for market gaps or slippage. This is typical for most EAs, but if the client wants extra safety, additional checks could be added.
+- **f. Parameter Change Logging:**
+  - The EA logs the initial setup, but does not log if the user changes parameters during runtime. If this is required, periodic or event-driven logging of parameter changes should be added.
+- **g. Error Handling:**
+  - The EA logs errors, but does not halt or alert the user if repeated errors occur. For unattended use, consider adding alerts or more robust error recovery.
+
+### 3. Documentation and Transparency
+
+- ✔️ The EA is well-instrumented for verification: all key events are logged, and chart objects make the logic visible.
+- ✔️ The code is readable and parameters are explicit.
+- ❓ If the client wants a user manual or more detailed in-code comments, this could be expanded.
+
+### 4. Summary Table
 | Requirement                  | Status | Comment                                      |
 |------------------------------|:------:|----------------------------------------------|
 | Golden Candle detection      |   ✔️   | Fully implemented, visual and logged         |
