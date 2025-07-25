@@ -1,3 +1,41 @@
+//--- Persistent flag: Only start trading after first Golden Candle appears
+bool goldenCandleAppeared = false;
+//--- Draw Golden Candle rectangle on chart
+void DrawGoldenCandleRect(int candleIdx, bool isBuy) {
+    string objName = (isBuy ? "GC_BUY_" : "GC_SELL_") + IntegerToString(candleIdx) + "_" + IntegerToString(Time[candleIdx]);
+    color rectColor = isBuy ? clrLime : clrOrangeRed;
+    double high = High[candleIdx];
+    double low = Low[candleIdx];
+    datetime time1 = Time[candleIdx+1];
+    datetime time2 = Time[candleIdx];
+    ObjectCreate(0, objName, OBJ_RECTANGLE, 0, time1, high, time2, low);
+    ObjectSetInteger(0, objName, OBJPROP_COLOR, rectColor);
+    ObjectSetInteger(0, objName, OBJPROP_BACK, true);
+    ObjectSetInteger(0, objName, OBJPROP_WIDTH, 1);
+    // Transparency is not supported in MT4, so OBJPROP_TRANSPARENCY is omitted
+}
+//--- Logging helper
+string logFileName = "GoldenCandleEA_log.csv";
+
+void LogEvent(string eventType, string details) {
+    string logLine = TimeToStr(TimeCurrent(), TIME_DATE|TIME_SECONDS) + "," + eventType + "," + details;
+    Print(logLine);
+    int handle = FileOpen(logFileName, FILE_CSV|FILE_WRITE|FILE_READ, ';');
+    if(handle >= 0) {
+        FileSeek(handle, 0, SEEK_END);
+        FileWrite(handle, logLine);
+        FileClose(handle);
+    }
+}
+
+//--- Log EA setup (input parameters)
+void LogEASetup() {
+    string setup = "LotSize=" + DoubleToStr(LotSize,2) + ",PSAR_Step=" + DoubleToStr(PSAR_Step,3) + ",PSAR_Max=" + DoubleToStr(PSAR_Max,2) +
+        ",EMA1_Period=" + IntegerToString(EMA1_Period) + ",EMA1_Shift=" + IntegerToString(EMA1_Shift) + ",EMA1_Method=" + IntegerToString(EMA1_Method) + ",EMA1_Applied=" + IntegerToString(EMA1_Applied) +
+        ",EMA3_Period=" + IntegerToString(EMA3_Period) + ",EMA3_Shift=" + IntegerToString(EMA3_Shift) + ",EMA3_Method=" + IntegerToString(EMA3_Method) + ",EMA3_Applied=" + IntegerToString(EMA3_Applied) +
+        ",GoldenCandleSize=" + DoubleToStr(GoldenCandleSize,Digits) + ",MagicNumber=" + IntegerToString(MagicNumber);
+    LogEvent("SETUP", setup);
+}
 //+------------------------------------------------------------------+
 //|                                                      GoldenCandleEA.mq4 |
 //|   Auto-generated based on client requirements and technical doc   |
@@ -29,6 +67,11 @@ extern color SLLevelColor = clrRed;
 extern color ProfitLevelColor = clrBlue;
 extern int MagicNumber = 123456;
 
+
+//--- Lot progression table
+#define LOT_TABLE_SIZE 25
+const double LotTable[LOT_TABLE_SIZE] = {0.01,0.01,0.01,0.01,0.01,0.01,0.02,0.02,0.02,0.02,0.03,0.03,0.04,0.04,0.05,0.05,0.06,0.07,0.08,0.09,0.10,0.12,0.14,0.16,0.18};
+
 //--- Global variables
 int ticket = -1;
 bool inTrade = false;
@@ -43,10 +86,6 @@ void CapLotIndex() {
     if(lotIndex < 0) lotIndex = 0;
     if(lotIndex >= LOT_TABLE_SIZE) lotIndex = LOT_TABLE_SIZE-1;
 }
-
-//--- Lot progression table
-#define LOT_TABLE_SIZE 25
-const double LotTable[LOT_TABLE_SIZE] = {0.01,0.01,0.01,0.01,0.01,0.01,0.02,0.02,0.02,0.02,0.03,0.03,0.04,0.04,0.05,0.05,0.06,0.07,0.08,0.09,0.10,0.12,0.14,0.16,0.18};
 
 //--- Helper function: Find Golden Candle
 int FindGoldenCandle(int shift, bool isBuy) {
@@ -94,47 +133,112 @@ void DrawLevels(double entry, double sl, double slValue, bool isBuy) {
     }
 }
 
+//--- Helper: Robust OrderSend with StopLevel check and enhanced logging
+int RobustOrderSend(string symbol, int cmd, double lots, double price, int slippage, double sl, double tp, string comment, int magic, datetime expiry, color arrow_color) {
+    int ticket = -1;
+    double point = MarketInfo(symbol, MODE_POINT);
+    int digits = MarketInfo(symbol, MODE_DIGITS);
+    int stopLevel = MarketInfo(symbol, MODE_STOPLEVEL);
+    double minDist = stopLevel * point;
+    // Fallback: if StopLevel is zero, use 10 points (1 pip for 5-digit, 10 pips for 3-digit)
+    if (minDist <= 0) {
+        minDist = (point > 0.0001 ? 0.00010 : 0.01); // 1 pip for most FX, 10 pips for JPY pairs
+        LogEvent("STOPLEVEL_FALLBACK", "Broker StopLevel=0, using default minDist=" + DoubleToStr(minDist, digits));
+    }
+    double origSL = sl, origTP = tp;
+    // Adjust SL/TP if too close
+    if(cmd == OP_BUY) {
+        if(sl > 0 && (price - sl) < minDist) {
+            sl = price - minDist;
+            LogEvent("ADJUST_SL", "Buy SL too close. Adjusted from " + DoubleToStr(origSL, digits) + " to " + DoubleToStr(sl, digits) + ", StopLevel=" + DoubleToStr(minDist, digits));
+        }
+        if(tp > 0 && (tp - price) < minDist) {
+            tp = price + minDist;
+            LogEvent("ADJUST_TP", "Buy TP too close. Adjusted from " + DoubleToStr(origTP, digits) + " to " + DoubleToStr(tp, digits) + ", StopLevel=" + DoubleToStr(minDist, digits));
+        }
+    } else if(cmd == OP_SELL) {
+        if(sl > 0 && (sl - price) < minDist) {
+            sl = price + minDist;
+            LogEvent("ADJUST_SL", "Sell SL too close. Adjusted from " + DoubleToStr(origSL, digits) + " to " + DoubleToStr(sl, digits) + ", StopLevel=" + DoubleToStr(minDist, digits));
+        }
+        if(tp > 0 && (price - tp) < minDist) {
+            tp = price - minDist;
+            LogEvent("ADJUST_TP", "Sell TP too close. Adjusted from " + DoubleToStr(origTP, digits) + " to " + DoubleToStr(tp, digits) + ", StopLevel=" + DoubleToStr(minDist, digits));
+        }
+    }
+    for(int attempt=0; attempt<3 && ticket<0; attempt++) {
+        ticket = OrderSend(symbol,cmd,lots,price,slippage,sl,tp,comment,magic,expiry,arrow_color);
+        if(ticket<0) {
+            int err = GetLastError();
+            LogEvent("ORDER_SEND_FAIL", "Attempt="+IntegerToString(attempt+1)+",Cmd="+IntegerToString(cmd)+",Price="+DoubleToStr(price,digits)+",SL="+DoubleToStr(sl,digits)+",TP="+DoubleToStr(tp,digits)+",StopLevel="+DoubleToStr(minDist,digits)+",Error="+IntegerToString(err));
+            if(err == 130) {
+                LogEvent("ERROR_130", "Invalid stops: SL/TP too close. Price="+DoubleToStr(price,digits)+",SL="+DoubleToStr(sl,digits)+",TP="+DoubleToStr(tp,digits)+",StopLevel="+DoubleToStr(minDist,digits));
+            }
+            Sleep(500);
+        }
+    }
+    return ticket;
+}
+
 //--- Main EA logic
 int start() {
+    static bool setupLogged = false;
+    if(!setupLogged) { LogEASetup(); setupLogged = true; }
     if(Bars < 100) return 0;
     CapLotIndex();
     datetime currTime = Time[0];
 
-    // Helper: Robust OrderSend with retry (max 3 attempts)
-    int RobustOrderSend(string symbol, int cmd, double lots, double price, int slippage, double sl, double tp, string comment, int magic, datetime expiry, color arrow_color) {
-        int ticket = -1;
-        for(int attempt=0; attempt<3 && ticket<0; attempt++) {
-            ticket = OrderSend(symbol,cmd,lots,price,slippage,sl,tp,comment,magic,expiry,arrow_color);
-            if(ticket<0) {
-                Print("OrderSend attempt ", attempt+1, " failed (", comment, "): ", GetLastError());
-                Sleep(500);
-            }
+    // Check for first Golden Candle apparition (buy or sell)
+    if(!goldenCandleAppeared) {
+        int firstBuyGC = FindGoldenCandle(1, true);
+        int firstSellGC = FindGoldenCandle(1, false);
+        if(firstBuyGC > 0 || firstSellGC > 0) {
+            goldenCandleAppeared = true;
+            LogEvent("FIRST_GC_APPARITION", "First Golden Candle detected at bar " + IntegerToString(firstBuyGC > 0 ? firstBuyGC : firstSellGC) + (firstBuyGC > 0 ? ",Type=Buy" : ",Type=Sell"));
+        } else {
+            // No Golden Candle yet, do not trade
+            LogEvent("WAITING_GC", "No Golden Candle detected yet. Trading is paused.");
+            return 0;
         }
-        return ticket;
     }
+
     if(inTrade && OrderSelect(ticket,SELECT_BY_TICKET)) {
+        LogEvent("IN_TRADE", "Ticket="+IntegerToString(ticket)+",Type="+(lastTradeType==0?"Buy":"Sell")+",Entry="+DoubleToStr(lastEntryPrice,Digits)+",SL="+DoubleToStr(lastSL,Digits));
         // Trailing stop logic
         double entry = lastEntryPrice;
         double slValue = MathAbs(entry - lastSL);
         double price = Close[0];
         if(lastTradeType == 0) { // Buy
-            if(price >= entry + 3*slValue && OrderStopLoss() < entry) OrderModify(ticket,OrderOpenPrice(),entry,OrderTakeProfit(),0,SLLevelColor);
-            if(price >= entry + 6*slValue && OrderStopLoss() < entry+slValue) OrderModify(ticket,OrderOpenPrice(),entry+slValue,OrderTakeProfit(),0,SLLevelColor);
+            if(price >= entry + 3*slValue && OrderStopLoss() < entry) {
+                OrderModify(ticket,OrderOpenPrice(),entry,OrderTakeProfit(),0,SLLevelColor);
+                LogEvent("TRAIL", "Buy trailing stop moved to "+DoubleToStr(entry,Digits));
+            }
+            if(price >= entry + 6*slValue && OrderStopLoss() < entry+slValue) {
+                OrderModify(ticket,OrderOpenPrice(),entry+slValue,OrderTakeProfit(),0,SLLevelColor);
+                LogEvent("TRAIL", "Buy trailing stop moved to "+DoubleToStr(entry+slValue,Digits));
+            }
         } else if(lastTradeType == 1) { // Sell
-            if(price <= entry - 3*slValue && OrderStopLoss() > entry) OrderModify(ticket,OrderOpenPrice(),entry,OrderTakeProfit(),0,SLLevelColor);
-            if(price <= entry - 6*slValue && OrderStopLoss() > entry-slValue) OrderModify(ticket,OrderOpenPrice(),entry-slValue,OrderTakeProfit(),0,SLLevelColor);
+            if(price <= entry - 3*slValue && OrderStopLoss() > entry) {
+                OrderModify(ticket,OrderOpenPrice(),entry,OrderTakeProfit(),0,SLLevelColor);
+                LogEvent("TRAIL", "Sell trailing stop moved to "+DoubleToStr(entry,Digits));
+            }
+            if(price <= entry - 6*slValue && OrderStopLoss() > entry-slValue) {
+                OrderModify(ticket,OrderOpenPrice(),entry-slValue,OrderTakeProfit(),0,SLLevelColor);
+                LogEvent("TRAIL", "Sell trailing stop moved to "+DoubleToStr(entry-slValue,Digits));
+            }
         }
         // Exit conditions
         double psar = iSAR(NULL,0,PSAR_Step,PSAR_Max,0);
         if((lastTradeType==0 && psar > Close[0]) || (lastTradeType==1 && psar < Close[0]) || OrderStopLoss()==OrderClosePrice() || OrderTakeProfit()==OrderClosePrice()) {
-            Print("Order closed. Type:", lastTradeType==0?"Buy":"Sell", " at ", OrderClosePrice());
+            string closeType = (OrderStopLoss()==OrderClosePrice()) ? "SL" : (OrderTakeProfit()==OrderClosePrice() ? "TP" : "PSAR");
+            LogEvent("EXIT", "Order closed. Type:"+(lastTradeType==0?"Buy":"Sell")+", at "+DoubleToStr(OrderClosePrice(),Digits)+", Reason="+closeType);
             bool wasSL = (OrderStopLoss()==OrderClosePrice());
             bool wasTP = (OrderTakeProfit()==OrderClosePrice());
             OrderClose(ticket,OrderLots(),OrderClosePrice(),3,clrViolet);
             inTrade = false;
             ticket = -1;
-            if(wasSL) { lotIndex++; Print("Stop loss hit. Advancing lot index to ", lotIndex); }
-            if(wasTP) { lotIndex = 0; Print("Take profit hit. Resetting lot index to 0."); }
+            if(wasSL) { lotIndex++; LogEvent("LOT_INDEX","Stop loss hit. Advancing lot index to "+IntegerToString(lotIndex)); }
+            if(wasTP) { lotIndex = 0; LogEvent("LOT_INDEX","Take profit hit. Resetting lot index to 0."); }
             CapLotIndex();
         }
         return 0;
@@ -146,6 +250,8 @@ int start() {
         if(gcIdx > 0) {
             double entryLine, gcSize;
             CalculateEntryLine(gcIdx,true,entryLine,gcSize);
+            LogEvent("GOLDEN_CANDLE_BUY", "Detected at bar "+IntegerToString(gcIdx)+", Size:"+DoubleToStr(gcSize,Digits));
+            DrawGoldenCandleRect(gcIdx, true);
             for(int i=gcIdx-1;i>=0;i--) {
                 if(High[i] > entryLine) {
                     double sl = entryLine - gcSize;
@@ -154,21 +260,23 @@ int start() {
                     if(ticket>0) {
                         inTrade = true; lastTradeType=0; lastEntryPrice=entryLine; lastSL=sl; lastEntryTime=currTime;
                         DrawLevels(entryLine,sl,gcSize,true);
-                        Print("Buy order opened at ", entryLine, " SL:", sl, " TP:", tp, " Lot:", LotTable[lotIndex]);
+                        LogEvent("ENTRY", "Buy order opened at "+DoubleToStr(entryLine,Digits)+" SL:"+DoubleToStr(sl,Digits)+" TP:"+DoubleToStr(tp,Digits)+" Lot:"+DoubleToStr(LotTable[lotIndex],2));
                     } else {
-                        Print("OrderSend error (Buy): ", GetLastError());
+                        LogEvent("ERROR", "OrderSend error (Buy): "+IntegerToString(GetLastError()));
                     }
                     break;
                 }
             }
         } else {
-            Print("No Golden Candle found for Buy entry.");
+            LogEvent("NO_GC_BUY", "No Golden Candle found for Buy entry.");
         }
         // First Sell Entry
         gcIdx = FindGoldenCandle(1,false);
         if(gcIdx > 0) {
             double entryLine, gcSize;
             CalculateEntryLine(gcIdx,false,entryLine,gcSize);
+            LogEvent("GOLDEN_CANDLE_SELL", "Detected at bar "+IntegerToString(gcIdx)+", Size:"+DoubleToStr(gcSize,Digits));
+            DrawGoldenCandleRect(gcIdx, false);
             for(int i=gcIdx-1;i>=0;i--) {
                 if(Low[i] < entryLine) {
                     double sl = entryLine + gcSize;
@@ -177,55 +285,55 @@ int start() {
                     if(ticket>0) {
                         inTrade = true; lastTradeType=1; lastEntryPrice=entryLine; lastSL=sl; lastEntryTime=currTime;
                         DrawLevels(entryLine,sl,gcSize,false);
-                        Print("Sell order opened at ", entryLine, " SL:", sl, " TP:", tp, " Lot:", LotTable[lotIndex]);
+                        LogEvent("ENTRY", "Sell order opened at "+DoubleToStr(entryLine,Digits)+" SL:"+DoubleToStr(sl,Digits)+" TP:"+DoubleToStr(tp,Digits)+" Lot:"+DoubleToStr(LotTable[lotIndex],2));
                     } else {
-                        Print("OrderSend error (Sell): ", GetLastError());
+                        LogEvent("ERROR", "OrderSend error (Sell): "+IntegerToString(GetLastError()));
                     }
                     break;
                 }
             }
         } else {
-            Print("No Golden Candle found for Sell entry.");
+            LogEvent("NO_GC_SELL", "No Golden Candle found for Sell entry.");
         }
         // Second Buy Entry (EMA cross)
         if(CheckEMACross(true)) {
             double price = Ask;
-            // Fallback: If GoldenCandleSize is not set, use ATR(14) as a reasonable proxy for volatility
             double fallbackSize = iATR(NULL,0,14,0);
             double size = (GoldenCandleSize>0?GoldenCandleSize:fallbackSize);
             double sl = price - size;
             double tp = price + 2*size;
+            LogEvent("EMA_CROSS_BUY", "Buy cross detected at price "+DoubleToStr(price,Digits)+", Size:"+DoubleToStr(size,Digits));
             if(size<=0) {
-                Print("GoldenCandleSize/ATR not set for EMA Buy entry. Skipping.");
+                LogEvent("ERROR", "GoldenCandleSize/ATR not set for EMA Buy entry. Skipping.");
             } else {
                 ticket = RobustOrderSend(Symbol(),OP_BUY,LotTable[lotIndex],Ask,3,sl,tp,"BuyEMA",MagicNumber,0,EntryLevelColor);
                 if(ticket>0) {
                     inTrade = true; lastTradeType=0; lastEntryPrice=price; lastSL=sl; lastEntryTime=currTime;
                     DrawLevels(price,sl,size,true);
-                    Print("BuyEMA order opened at ", price, " SL:", sl, " TP:", tp, " Lot:", LotTable[lotIndex]);
+                    LogEvent("ENTRY", "BuyEMA order opened at "+DoubleToStr(price,Digits)+" SL:"+DoubleToStr(sl,Digits)+" TP:"+DoubleToStr(tp,Digits)+" Lot:"+DoubleToStr(LotTable[lotIndex],2));
                 } else {
-                    Print("OrderSend error (BuyEMA): ", GetLastError());
+                    LogEvent("ERROR", "OrderSend error (BuyEMA): "+IntegerToString(GetLastError()));
                 }
             }
         }
         // Second Sell Entry (EMA cross)
         if(CheckEMACross(false)) {
             double price = Bid;
-            // Fallback: If GoldenCandleSize is not set, use ATR(14) as a reasonable proxy for volatility
             double fallbackSize = iATR(NULL,0,14,0);
             double size = (GoldenCandleSize>0?GoldenCandleSize:fallbackSize);
             double sl = price + size;
             double tp = price - 2*size;
+            LogEvent("EMA_CROSS_SELL", "Sell cross detected at price "+DoubleToStr(price,Digits)+", Size:"+DoubleToStr(size,Digits));
             if(size<=0) {
-                Print("GoldenCandleSize/ATR not set for EMA Sell entry. Skipping.");
+                LogEvent("ERROR", "GoldenCandleSize/ATR not set for EMA Sell entry. Skipping.");
             } else {
                 ticket = RobustOrderSend(Symbol(),OP_SELL,LotTable[lotIndex],Bid,3,sl,tp,"SellEMA",MagicNumber,0,SLLevelColor);
                 if(ticket>0) {
                     inTrade = true; lastTradeType=1; lastEntryPrice=price; lastSL=sl; lastEntryTime=currTime;
                     DrawLevels(price,sl,size,false);
-                    Print("SellEMA order opened at ", price, " SL:", sl, " TP:", tp, " Lot:", LotTable[lotIndex]);
+                    LogEvent("ENTRY", "SellEMA order opened at "+DoubleToStr(price,Digits)+" SL:"+DoubleToStr(sl,Digits)+" TP:"+DoubleToStr(tp,Digits)+" Lot:"+DoubleToStr(LotTable[lotIndex],2));
                 } else {
-                    Print("OrderSend error (SellEMA): ", GetLastError());
+                    LogEvent("ERROR", "OrderSend error (SellEMA): "+IntegerToString(GetLastError()));
                 }
             }
         }
