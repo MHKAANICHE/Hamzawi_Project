@@ -1,161 +1,45 @@
 
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hamzawi_Project - MT4 Expert Advisor</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #e3f0ff 0%, #f8f9fa 100%);
-            color: #1a2233;
-            margin: 0; padding: 0;
-        }
-        .container {
-            max-width: 900px;
-            margin: 40px auto;
-            background: #fff;
-            border-radius: 16px;
-            box-shadow: 0 4px 24px #0002;
-            padding: 36px 40px 32px 40px;
-            position: relative;
-        }
-        .header-graphic {
-            width: 100%;
-            height: 120px;
-            background: linear-gradient(90deg, #2a5d9f 0%, #6ec6ff 100%);
-            border-radius: 12px 12px 0 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 24px;
-        }
-        .header-graphic img {
-            height: 70px;
-            margin-right: 24px;
-        }
-        .header-title {
-            color: #fff;
-            font-size: 2.5em;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-shadow: 0 2px 8px #0003;
-        }
-        h2 {
-            color: #2a5d9f;
-            border-bottom: 2px solid #e0e0e0;
-            padding-bottom: 6px;
-            margin-top: 36px;
-        }
-        h3 { color: #1b3a5c; margin-top: 28px; }
-        ul, ol { margin-left: 24px; }
-        .feature-list li { margin-bottom: 8px; }
-        .section { margin-bottom: 36px; }
-        .note {
-            background: #eaf6ff;
-            border-left: 5px solid #2a5d9f;
-            padding: 14px 22px;
-            margin: 20px 0;
-            border-radius: 8px;
-            font-size: 1.08em;
-        }
-        code {
-            background: #f4f4f4;
-            padding: 2px 7px;
-            border-radius: 4px;
-            font-size: 1.01em;
-        }
-        .footer {
-            color: #888;
-            font-size: 1em;
-            margin-top: 48px;
-            text-align: center;
-        }
-        .section-icon {
-            font-size: 1.3em;
-            margin-right: 8px;
-            vertical-align: middle;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 12px;
-            margin-bottom: 12px;
-        }
-        th, td {
-            padding: 7px 10px;
-            border: 1px solid #e0e0e0;
-            text-align: left;
-        }
-        th {
-            background: #f4f8ff;
-            color: #2a5d9f;
-        }
-        tr:nth-child(even) { background: #f8fbff; }
-        tr:nth-child(odd) { background: #fff; }
-        @media (max-width: 700px) {
-            .container { padding: 10px; }
-            .header-title { font-size: 1.5em; }
-        }
-    </style>
-</head>
-<body>
-<div class="container">
-    <div class="header-graphic">
-        <img src="https://img.icons8.com/ios-filled/100/ffffff/robot-2.png" alt="EA Icon"/>
-        <span class="header-title">Hamzawi_Project</span>
-    </div>
-    <div class="section">
-        <h2><span class="section-icon">📈</span>Overview</h2>
-        <p>
-            <strong>Hamzawi_Project</strong> is a professional Expert Advisor (EA) for <b>MetaTrader 4 (MT4)</b> that automates trading based on a custom strategy provided by the client.<br>
-            The EA leverages Parabolic SAR, two Exponential Moving Averages, and a user-defined <b>Golden Candle</b> to determine trade entries, exits, and risk management.<br>
-        </p>
-    </div>
-    <div class="section">
-        <h2><span class="section-icon">✨</span>Key Features</h2>
-        <ul class="feature-list">
-            <li>Customizable lot size, Parabolic SAR, and Moving Average parameters</li>
-            <li>Golden Candle input for dynamic entry and stop loss calculation</li>
-            <li>Automated buy/sell logic based on indicator signals</li>
-            <li>Dynamic stop loss, take profit, and trailing stop system</li>
-            <li>Visual chart levels for entry, stop loss, and profit targets</li>
-            <li>Lot progression table for risk management</li>
-            <li>Comprehensive logging for all technical actions and errors</li>
-            <li>Visual Golden Candle highlighting on the chart</li>
-        </ul>
-    </div>
-    <div class="section">
-        <h2><span class="section-icon">🛠️</span>How to Use</h2>
-        <ol>
-            <li>Place the EA file (<code>GoldenCandleEA.mq4</code>) in your MT4 <code>Experts</code> directory.</li>
-            <li>Restart MetaTrader 4 and attach the EA to your desired chart.</li>
-            <li>Configure the input parameters as needed:
-                <ul>
-                    <li>Lot size</li>
-                    <li>Parabolic SAR settings</li>
-                    <li>Moving Average settings</li>
-                    <li>Golden Candle size</li>
-                </ul>
-            </li>
-            <li>The EA will automatically execute trades and manage positions according to the strategy rules.</li>
-        </ol>
-    </div>
-    <div class="section">
-        <h2><span class="section-icon">📋</span>Requirements</h2>
-        <ul>
-            <li>MetaTrader 4 platform</li>
-            <li>The provided PDF (<code>EA Forex.pdf</code>) contains the original client requirements and strategy details.</li>
-        </ul>
-    </div>
-    <div class="section">
-        <h2><span class="section-icon">📚</span>Documentation</h2>
-        <p>See <code>Technical_Documentation.md</code> for a detailed technical description of the EA logic and implementation.</p>
-    </div>
-    <div class="section">
-        <h2><span class="section-icon">📝</span>Critique &amp; Compliance Review</h2>
+<!-- Banner image for GitHub (optional, can be replaced with your own) -->
+<p align="center">
+  <img src="https://img.icons8.com/ios-filled/100/2a5d9f/robot-2.png" alt="EA Icon" width="90"/>
+</p>
+
+# Hamzawi_Project - MT4 Expert Advisor
+
+---
+## 📈 Overview
+
+**Hamzawi_Project** is a professional Expert Advisor (EA) for **MetaTrader 4 (MT4)** that automates trading based on a custom strategy provided by the client.
+The EA leverages Parabolic SAR, two Exponential Moving Averages, and a user-defined **Golden Candle** to determine trade entries, exits, and risk management.
+## ✨ Key Features
+
+- Customizable lot size, Parabolic SAR, and Moving Average parameters
+- Golden Candle input for dynamic entry and stop loss calculation
+- Automated buy/sell logic based on indicator signals
+- Dynamic stop loss, take profit, and trailing stop system
+- Visual chart levels for entry, stop loss, and profit targets
+- Lot progression table for risk management
+- Comprehensive logging for all technical actions and errors
+- Visual Golden Candle highlighting on the chart
+## 🛠️ How to Use
+
+1. Place the EA file (`GoldenCandleEA.mq4`) in your MT4 `Experts` directory.
+2. Restart MetaTrader 4 and attach the EA to your desired chart.
+3. Configure the input parameters as needed:
+    - Lot size
+    - Parabolic SAR settings
+    - Moving Average settings
+    - Golden Candle size
+4. The EA will automatically execute trades and manage positions according to the strategy rules.
+## 📋 Requirements
+
+- MetaTrader 4 platform
+- The provided PDF (`EA Forex.pdf`) contains the original client requirements and strategy details.
+## 📚 Documentation
+
+See `Technical_Documentation.md` for a detailed technical description of the EA logic and implementation.
+## 📝 Critique & Compliance Review
         <h3>1. Explicitness of Client Requirements</h3>
         <ul>
             <li><b>a. Golden Candle Logic</b>
@@ -234,31 +118,29 @@
             <li>❓ If the client wants a user manual or more detailed in-code comments, this could be expanded.</li>
         </ul>
         <h3>4. Summary Table</h3>
-        <table style="width:100%;border-collapse:collapse;">
-            <tr style="background:#f4f4f4;"><th style="text-align:left;padding:4px;">Requirement</th><th style="text-align:left;padding:4px;">Status</th><th style="text-align:left;padding:4px;">Comment</th></tr>
-            <tr><td>Golden Candle detection</td><td>✔️</td><td>Fully implemented, visual and logged</td></tr>
-            <tr><td>Entry/exit logic</td><td>✔️</td><td>All rules present, robust</td></tr>
-            <tr><td>Lot progression</td><td>✔️</td><td>Table, capping, and logging</td></tr>
-            <tr><td>Chart visuals</td><td>✔️</td><td>Entry, SL, TP, Golden Candle rectangles</td></tr>
-            <tr><td>Logging</td><td>✔️</td><td>All key actions, errors, and setup logged</td></tr>
-            <tr><td>Robustness (retry, SL/TP, fallback)</td><td>✔️</td><td>OrderSend retry, SL/TP adjust, StopLevel fallback</td></tr>
-            <tr><td>User adjustability</td><td>✔️</td><td>All key params are extern</td></tr>
-            <tr><td>EMA cross logic</td><td>⚠️</td><td>May need tightening if only allowed after Golden Candle</td></tr>
-            <tr><td>Multi-trade support</td><td>❌</td><td>Only one trade at a time</td></tr>
-            <tr><td>Persistent state</td><td>⚠️</td><td>Not persistent across restarts</td></tr>
-            <tr><td>Parameter change logging</td><td>⚠️</td><td>Only initial setup logged</td></tr>
-            <tr><td>Error handling/alerts</td><td>⚠️</td><td>Logs errors, but no user alert or halt on repeated failure</td></tr>
-        </table>
-        <div class="note">
-            <b>Conclusion:</b> The EA is robust, explicit, and covers nearly all client requirements. The only possible gaps are in EMA cross logic timing, multi-trade support, persistent state, and parameter change logging. If the client needs any of these, further refinement is recommended.
-        </div>
-        <p style="margin-top:18px;">Let me know if you want to address any of these points or need a more detailed review!</p>
+| Requirement                  | Status | Comment                                      |
+|------------------------------|:------:|----------------------------------------------|
+| Golden Candle detection      |   ✔️   | Fully implemented, visual and logged         |
+| Entry/exit logic             |   ✔️   | All rules present, robust                    |
+| Lot progression              |   ✔️   | Table, capping, and logging                  |
+| Chart visuals                |   ✔️   | Entry, SL, TP, Golden Candle rectangles      |
+| Logging                      |   ✔️   | All key actions, errors, and setup logged    |
+| Robustness (retry, SL/TP)    |   ✔️   | OrderSend retry, SL/TP adjust, fallback      |
+| User adjustability           |   ✔️   | All key params are extern                    |
+| EMA cross logic              |   ⚠️   | May need tightening if only after Golden Candle |
+| Multi-trade support          |   ❌   | Only one trade at a time                     |
+| Persistent state             |   ⚠️   | Not persistent across restarts               |
+| Parameter change logging     |   ⚠️   | Only initial setup logged                    |
+| Error handling/alerts        |   ⚠️   | Logs errors, but no user alert/halt on fail  |
+> **Conclusion:**
+> The EA is robust, explicit, and covers nearly all client requirements. The only possible gaps are in EMA cross logic timing, multi-trade support, persistent state, and parameter change logging. If the client needs any of these, further refinement is recommended.
+
+Let me know if you want to address any of these points or need a more detailed review!
     </div>
-        <div class="footer">
-            &copy; 2025 Moh Hamzawi. All rights reserved.<br>
-            <span style="font-size:0.95em;">Developed by MHKAANICHE.<br>For support or questions, please refer to the project documentation.</span>
-        </div>
-    </div>
+
+---
+
+<div align="center">
+    &copy; 2025 Moh Hamzawi. All rights reserved.<br>
+    <sub>Developed by MHKAANICHE.<br>For support or questions, please refer to the project documentation.</sub>
 </div>
-</body>
-</html>
