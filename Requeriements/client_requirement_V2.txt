@@ -1,0 +1,120 @@
+Client explain it's strategie using video presentations: 
+- BTCUSD on M1 Chart 
+
+Video 1 :
+- Parabolic SAR
+- MQLTA MT4 Moving Average Crossover alerte ( Indicator short name : MQLTA-MACA)
+inputs :
+Fast moving average period : 1
+Fast moving average shift : 0
+Fast moving average method : Exponential 
+Fast Moving average applied price : Close price 
+Slow moving average period : 3
+Slow moving average shift : 1
+Slow moving average method : Exponential 
+Slow Moving average applied price : Close price 
+
+the chart shows arrows that alert iMA 1(fast) cross iMA 3 (slow)
+Up arrows_color in yellow/clrOrangeRed
+Down arrow_color in clrMagenta
+
+video 2 : 
+- client ask to be able to anable to set lot size of the beging of the entry 
+- client ask for a box that he input the lot size
+- Parabolic SAR inputs { step : 0.001, Maximum : 0.2, style : Orange }
+- About the Golden Candle size : he selected an icone for fibonnaci to select ranges. he asked to be provided by the pip difference (not clear directive) that will serves for stop loss later.
+
+video 3 : 
+- the client explain The buy entry case : 
+* the first buy entry case : 
+> Parabolic SAR is moving down , when the first Parabolic SAR opposite direction dot appears (up movement Parabolic SAR) 
+and price crosse the Moving-Down Parbolic SAR ,  the Mongin-Up Parabolic SAR is under the price , no trade nothing started unless the Parabolic SAR change direction (showing the parabolic change plot printing from upper the price curve to down the price curve)
+> the EA should looking for buy setup like this , the don't show down the price other wise we wait 
+> No opening position when the parabolic sar is in continuous setup (continuous line draw)
+> the client asked : do we have a buy order ? (as a second condition)
+we will measure it now ! answer, we will measure as I told before the Golden Candle
+the size of the golden candle (about 15000 , and he is measuring a range of BTCUSD with two digits after zero)
+Let's say I want 10000, so 35% of this it means 3500, and he contract a modified fibonnaci graph (all distance are equal)
+at the close of the candle (where the first dot of opposite Parabolic SAR appears), he palced the first line of the equal ladder fixed at 3500 each
+he selected the next level, this is the line you should act ( traduction, at 3500 pips above the close of the candle where Prabolic SAR trigger appreaded)
+this line is drawn on the chart (as reference), the ea should be eanble to put this line as entry line (talking about pending order)
+waiting if the prices comes to this line , once it comes to this line it will open a trade.
+
+video 4 : 
+Now let's talke about setting up everything 
+so we are at entry point (pending order is fullfilled), and  we will go 10000 as I stated (he is talking about the OrderStopLoss)
+price is rangin, 
+the MQLTA-MACA is drawing arrows as alert, but there is no buy, Only one trade at the time
+(talking about MQLTA-MACA alerts, no other trade will be placed until the original one is closed)
+client show a case where the original trade has hit the stoploss( at 10000 pips - two digits after the zero)
+he erased the reference line, hes stated that line is no more valid, we will move at the next step at this point ( where stoploss has been hit)
+
+video 5 : 
+he show the candle where stop loss has been hit, the second case where buy is set is based on MQLTA-MACA
+the same candle size will be applied at that point (MQLTA-MACA - arrow alert for buy)
+placing the reference line at the close of MQLTA-MACA alert arrow with a stop loss of 10000
+
+he shows a up trend chart, once he placed the reference line (ladder : first line is the stop loss, second is reference line , third and so on all placed at 10000 and paddel is going until 7 steps)
+
+video 6 : 
+let's to talk about lot size 
+- shows this table 
+ Lot Size Lot Entry
+distribution Target for Each Lot
+1 0.01 1 2
+2 0.01 1 3
+3 0.01 1 4
+4 0.01 1 5
+5 0.01 1 6
+6 0.01 1 7
+7 0.02 2 1+7
+8 0.02 2 3+7
+9 0.02 2 5+7
+10 0.02 2 7+7
+11 0.03 3 3+7+7
+12 0.03 3 5+7+7
+13 0.04 4 1+7+7+7
+14 0.04 4 5+7+7+7
+15 0.05 5 2+7+7+7+7
+16 0.05 5 7+7+7+7+7
+17 0.06 6 5+7+7+7+7+7
+18 0.07 7 4+7+7+7+7+7+7
+19 0.08 9 4+7+7+7+7+7+7+7
+20 0.09 9 5+7+7+7+7+7+7+7+7
+21 0.1 10 7+7+7+7+7+7+7+7+7+7
+22 0.12 12 3+7+7+7+7+7+7+7+7+7+7+7
+23 0.14 14 1+7+7+7+7+7+7+7+7+7+7+7+7+7
+24 0.16 16 1+7+7+7+7+7+7+7+7+7+7+7+7+7+7+7
+25 0.18 18 3+7+7+7+7+7+7+7+7+7+7+7+7+7+7+7+7+7
+
+so the beging we had an entry of 0.01  as entry line , our target for this lot size is R:R of 2
+SL 10000 TP 20000
+second position 0.01 but R:R of 3
+SL 10000 TP 30000
+until 7th attenpt it will be 0.02 (here he explain)
+0.01 with R:R of 1 AND 0.01 with R:R of 7 
+8th attempt it will be 0.02 with 
+0.01 with R:R of 3 AND 0.01 with R:R of 7
+9th attemp it will be 0.02 with 
+0.01 with R:R of 5 and 0.01 with R:R of 7
+10th attemp it will be 0.02 with 
+0.01 with R:R of 7 and 0.01 with R:R of 7
+11th attemp it will be 0.03 with 
+0.01 with R:R of 3 and 0.01 with R:R of 7 and 0.01 with R:R of 7
+Up 25 attempt
+In the graphical setup the client as to be able to stop the system to put the system on hold (no trade) and be able to skip level lots (passing from 9 to 13 manually )
+
+video 7 : 
+Once a candle are moving and we have a an entry once it reach the third level ( 30000) the Stoploss has to come to zero level (entry point line)
+once it comes to the sixth level , the stop loss has to come to the first line 
+> the setup is logical and we shoud help client adopting his strategie making all these variables as external inputs
+
+video 8 : 
+showing a special condition 
+showing the ParabolicSAR setup (switching direction for buy), drawing the reference line for pending order at 3000 + close price of that candle
+the market is rangin 
+a MQLTA-MACA alert appears (up arrow drawn), the client stated that at this case the reference price should move respectevely to the close price of that candle (as any position has been opened)
+
+video 9 : Not clear
+video 10 : Not clear
+
