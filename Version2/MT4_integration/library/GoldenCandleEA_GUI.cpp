@@ -1,4 +1,19 @@
 // GoldenCandleEA_GUI.cpp
+#include <windows.h>
+// --- DLL Exported Stubs for MQL4 Compatibility ---
+extern "C" __declspec(dllexport) void ShowSettingsDialog() {
+    MessageBoxA(NULL, "Settings dialog called from EA.", "GoldenCandleEA Settings", MB_OK | MB_ICONINFORMATION);
+}
+
+extern "C" __declspec(dllexport) void ShowTradeMonitor() {
+    // Stub: No-op or show a message box if needed
+}
+
+extern "C" __declspec(dllexport) void ShowAlert(const char* message) {
+    // Stub: Show a message box with the alert message
+    MessageBoxA(NULL, message, "GoldenCandleEA Alert", MB_OK | MB_ICONINFORMATION);
+}
+// GoldenCandleEA_GUI.cpp
 // Win32 GUI implementation for Golden Candle EA user actions
 // Patch 2: Expanded dialog for pause, skip, manual order, adjust min size, ignore alert
 

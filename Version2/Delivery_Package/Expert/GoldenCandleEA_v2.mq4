@@ -90,11 +90,11 @@ int start() {
     // Call global trailing stop logic
     TrailingStopLogic();
     static bool shown = false;
-    if(!shown) { ShowSettingsDialog(); shown = true; }
+    if(!shown && !IsTesting()) { ShowSettingsDialog(); shown = true; }
 
     // --- Patch: GUI dialog timing ---
     // Show the EA dialog every 60 seconds (as an example; in production, use hotkey/menu/button)
-    if(TimeCurrent() - lastDialogTime > 60) {
+    if(TimeCurrent() - lastDialogTime > 60 && !IsTesting()) {
         ShowEADialog();
         lastDialogTime = TimeCurrent();
     }
@@ -103,7 +103,7 @@ int start() {
     bool pauseErr = false, skipErr = false, manualErr = false, minErr = false, ignoreErr = false;
     int err = 0;
     // Pause
-    if (IsTradingPaused()) {
+    if ( !IsTesting() && IsTradingPaused()) {
         gPauseTrading = true;
         LogEvent("USER", "User paused trading via GUI");
     } else {
@@ -111,7 +111,7 @@ int start() {
         gPauseTrading = false;
     }
     // Skip Level
-    if (IsSkipLevel()) {
+    if (!IsTesting() && IsSkipLevel()) {
         if (!IsStopped()) {
             SkipLevel();
             LogEvent("USER", "User skipped to next lot progression level via GUI");
@@ -120,7 +120,7 @@ int start() {
         }
     }
     // Manual Order
-    if (IsManualOrder()) {
+    if (!IsTesting() && IsManualOrder()) {
         double lot = 0, entry = 0, sl = 0, tp = 0;
         bool gotParams = false;
         err = 0;
@@ -143,8 +143,8 @@ int start() {
             manualErr = true;
         }
     }
-    // Adjust Min Size
-    if (IsAdjustMinSize()) {
+    // Adjust Min Size 
+    if (!IsTesting() && IsAdjustMinSize()) {
         double newMin = GetNewMinSize();
         if (newMin > 0) {
             AdjustMinGoldenCandleSize(newMin);
@@ -155,7 +155,7 @@ int start() {
         }
     }
     // Ignore Alert
-    if (IsIgnoreAlert()) {
+    if (!IsTesting() && IsIgnoreAlert()) {
         IgnoreCurrentAlert();
         LogEvent("USER", "User ignored alert via GUI");
     }
@@ -166,7 +166,7 @@ int start() {
     if (minErr) LogEvent("ERROR", "Adjust min size action failed");
     if (ignoreErr) LogEvent("ERROR", "Ignore alert action failed");
 
-    if(gPauseTrading) {
+    if(!IsTesting() && gPauseTrading) {
         LogEvent("INFO", "Trading is paused by user.");
         // Still manage open trades (trailing stop, exit, etc.), but skip new entries
         for(int i=0; i<OrdersTotal(); ++i) {
@@ -238,7 +238,7 @@ int start() {
         // Check if market is closed
         if(MarketInfo(Symbol(), MODE_TRADEALLOWED) == 0) {
             LogEvent("ERROR", "Market is closed. No trading allowed.");
-            ShowAlert("Market is closed. No trading allowed.");
+            if(!IsTesting()) ShowAlert("Market is closed. No trading allowed.");
             return 0;
         }
 
@@ -246,14 +246,14 @@ int start() {
         double spread = (Ask - Bid) / MarketInfo(Symbol(), MODE_POINT);
         if(spread > MaxSpread) {
             LogEvent("ERROR", "Spread too high. Skipping trade.");
-            ShowAlert("Spread too high. Skipping trade.");
+            if(!IsTesting()) ShowAlert("Spread too high. Skipping trade.");
             return 0;
         }
 
     // DLL: Golden Candle detection
     int gcIdx = CheckGoldenCandle(highs, lows, 10, GoldenCandleMinSize, GoldenCandleMaxSize);
     if(gcIdx >= 0) {
-        ShowAlert("Golden Candle detected!");
+    if(!IsTesting()) ShowAlert("Golden Candle detected!");
         // DLL: Get lot size and R:R for this level
         double lot = GetNextLotSize();
             double minLot = MarketInfo(Symbol(), MODE_MINLOT);
@@ -261,7 +261,7 @@ int start() {
             if(lot < minLot || lot > maxLot) {
                 string msg = "Lot size " + DoubleToStr(lot,2) + " out of broker limits (min=" + DoubleToStr(minLot,2) + ", max=" + DoubleToStr(maxLot,2) + ")";
                 LogEvent("ERROR", msg);
-                ShowAlert(msg);
+                if(!IsTesting()) ShowAlert(msg);
                 return 0;
             }
             lot = NormalizeDouble(lot, 2);
@@ -278,7 +278,7 @@ int start() {
                 LogEvent("INFO", "Golden Candle size out of bounds. Skipping trade.");
                 return 0;
             }
-            ShowAlert("Golden Candle detected!");
+            if(!IsTesting()) ShowAlert("Golden Candle detected!");
             double lot = GetNextLotSize();
             double entry = closes[gcIdx];
             double sl = entry - gcSize;
@@ -297,7 +297,7 @@ int start() {
                 ticket = PlaceOrderWithRetries(Symbol(), OP_BUY, lot, Ask, 3, sl, tp, "GoldenCandle", 123456, clrGreen);
                 string msg = "OrderSend error 130: Adjusted stops and retried. SL=" + DoubleToStr(sl,2) + ", TP=" + DoubleToStr(tp,2);
                 LogEvent("ERROR", msg);
-                ShowAlert(msg);
+                if(!IsTesting()) ShowAlert(msg);
             }
             if(ticket > 0) {
                 LogEvent("TRADE", "Buy order placed by Golden Candle");
@@ -305,14 +305,14 @@ int start() {
                 int err = GetLastError();
                 if(err == 134) {
                     LogEvent("ERROR", "OrderSend failed: Not enough money");
-                    ShowAlert("OrderSend failed: Not enough money");
+                    if(!IsTesting()) ShowAlert("OrderSend failed: Not enough money");
                 } else if(err == 135) {
                     LogEvent("ERROR", "OrderSend failed: Not enough equity");
-                    ShowAlert("OrderSend failed: Not enough equity");
+                    if(!IsTesting()) ShowAlert("OrderSend failed: Not enough equity");
                 } else {
                     string msg = "OrderSend failed: Error code " + IntegerToString(err);
                     LogEvent("ERROR", msg);
-                    ShowAlert(msg);
+                    if(!IsTesting()) ShowAlert(msg);
                 }
             }
         }
@@ -325,7 +325,7 @@ int start() {
                 LogEvent("INFO", "Golden Candle size out of bounds. Skipping sell trade.");
                 return 0;
             }
-            ShowAlert("Golden Candle sell detected!");
+            if(!IsTesting()) ShowAlert("Golden Candle sell detected!");
             double lot = GetNextLotSize();
             double entry = closes[gcSellIdx];
             double sl = entry + gcSize;
@@ -344,7 +344,7 @@ int start() {
                 ticket = PlaceOrderWithRetries(Symbol(), OP_SELL, lot, Bid, 3, sl, tp, "GoldenCandleSell", 123456, clrRed);
                 string msg = "OrderSend error 130: Adjusted stops and retried. SL=" + DoubleToStr(sl,2) + ", TP=" + DoubleToStr(tp,2);
                 LogEvent("ERROR", msg);
-                ShowAlert(msg);
+                if(!IsTesting()) ShowAlert(msg);
             }
             if(ticket > 0) {
                 LogEvent("TRADE", "Sell order placed by Golden Candle");
@@ -352,14 +352,14 @@ int start() {
                 int err = GetLastError();
                 if(err == 134) {
                     LogEvent("ERROR", "OrderSend failed: Not enough money");
-                    ShowAlert("OrderSend failed: Not enough money");
+                    if(!IsTesting()) ShowAlert("OrderSend failed: Not enough money");
                 } else if(err == 135) {
                     LogEvent("ERROR", "OrderSend failed: Not enough equity");
-                    ShowAlert("OrderSend failed: Not enough equity");
+                    if(!IsTesting()) ShowAlert("OrderSend failed: Not enough equity");
                 } else {
                     string msg = "OrderSend failed: Error code " + IntegerToString(err);
                     LogEvent("ERROR", msg);
-                    ShowAlert(msg);
+                    if(!IsTesting()) ShowAlert(msg);
                 }
             }
         }
@@ -386,7 +386,7 @@ int start() {
                 ticket = PlaceOrderWithRetries(Symbol(), OP_BUY, lot, Ask, 3, sl, tp, "EMACrossBuy", 123456, clrBlue);
                 string msg = "OrderSend error 130: Adjusted stops and retried. SL=" + DoubleToStr(sl,2) + ", TP=" + DoubleToStr(tp,2);
                 LogEvent("ERROR", msg);
-                ShowAlert(msg);
+                if(!IsTesting()) ShowAlert(msg);
             }
             if(ticket > 0) {
                 LogEvent("TRADE", "Buy order placed by EMA cross");
@@ -394,14 +394,14 @@ int start() {
                 int err = GetLastError();
                 if(err == 134) {
                     LogEvent("ERROR", "OrderSend failed: Not enough money");
-                    ShowAlert("OrderSend failed: Not enough money");
+                    if(!IsTesting()) ShowAlert("OrderSend failed: Not enough money");
                 } else if(err == 135) {
                     LogEvent("ERROR", "OrderSend failed: Not enough equity");
-                    ShowAlert("OrderSend failed: Not enough equity");
+                    if(!IsTesting()) ShowAlert("OrderSend failed: Not enough equity");
                 } else {
                     string msg = "OrderSend failed: Error code " + IntegerToString(err);
                     LogEvent("ERROR", msg);
-                    ShowAlert(msg);
+                    if(!IsTesting()) ShowAlert(msg);
                 }
             }
         }
@@ -428,7 +428,7 @@ int start() {
                 ticket = PlaceOrderWithRetries(Symbol(), OP_SELL, lot, Bid, 3, sl, tp, "EMACrossSell", 123456, clrMagenta);
                 string msg = "OrderSend error 130: Adjusted stops and retried. SL=" + DoubleToStr(sl,2) + ", TP=" + DoubleToStr(tp,2);
                 LogEvent("ERROR", msg);
-                ShowAlert(msg);
+                if(!IsTesting()) ShowAlert(msg);
             }
             if(ticket > 0) {
                 LogEvent("TRADE", "Sell order placed by EMA cross");
@@ -436,14 +436,14 @@ int start() {
                 int err = GetLastError();
                 if(err == 134) {
                     LogEvent("ERROR", "OrderSend failed: Not enough money");
-                    ShowAlert("OrderSend failed: Not enough money");
+                    if(!IsTesting()) ShowAlert("OrderSend failed: Not enough money");
                 } else if(err == 135) {
                     LogEvent("ERROR", "OrderSend failed: Not enough equity");
-                    ShowAlert("OrderSend failed: Not enough equity");
+                    if(!IsTesting()) ShowAlert("OrderSend failed: Not enough equity");
                 } else {
                     string msg = "OrderSend failed: Error code " + IntegerToString(err);
                     LogEvent("ERROR", msg);
-                    ShowAlert(msg);
+                    if(!IsTesting()) ShowAlert(msg);
                 }
             }
         }
@@ -483,14 +483,14 @@ void LogEvent(string category, string message) {
 // --- User action: ignore alert ---
 void IgnoreCurrentAlert() {
     LogEvent("USER", "User chose to ignore the current alert/signal.");
-    ShowAlert("Current alert/signal ignored by user.");
+    if(!IsTesting()) ShowAlert("Current alert/signal ignored by user.");
 }
 // --- User action: adjust minimum Golden Candle size ---
 void AdjustMinGoldenCandleSize(double newMinSize) {
     GoldenCandleMinSize = newMinSize;
     string msg = "Minimum Golden Candle size adjusted to " + DoubleToStr(newMinSize, 2);
     LogEvent("USER", msg);
-    ShowAlert(msg);
+    if(!IsTesting()) ShowAlert(msg);
 }
 // --- User action: manual order ---
 void PlaceManualOrder(ManualOrderParams &mop) {
@@ -506,7 +506,7 @@ void PlaceManualOrder(ManualOrderParams &mop) {
     if(lot < minLot || lot > maxLot) {
         string msg = "Lot size " + DoubleToStr(lot,2) + " out of broker limits (min=" + DoubleToStr(minLot,2) + ", max=" + DoubleToStr(maxLot,2) + ")";
         LogEvent("ERROR", msg);
-        ShowAlert(msg);
+    if(!IsTesting()) ShowAlert(msg);
         return;
     }
     int ticket = -1;
@@ -526,7 +526,7 @@ void PlaceManualOrder(ManualOrderParams &mop) {
             ticket = PlaceOrderWithRetries(Symbol(), cmd, lot, price, 3, sl, tp, "ManualOrder", 123456, clrViolet);
             string msg = "OrderSend error 130: Adjusted stops and retried. SL=" + DoubleToStr(sl,2) + ", TP=" + DoubleToStr(tp,2);
             LogEvent("ERROR", msg);
-            ShowAlert(msg);
+            if(!IsTesting()) ShowAlert(msg);
         }
     } else if(orderType == 1) { // Pending order
         int cmd = (entry >= Ask) ? OP_BUYSTOP : OP_SELLSTOP;
@@ -543,7 +543,7 @@ void PlaceManualOrder(ManualOrderParams &mop) {
             ticket = PlaceOrderWithRetries(Symbol(), cmd, lot, entry, 3, sl, tp, "ManualOrder", 123456, clrViolet);
             string msg = "OrderSend error 130: Adjusted stops and retried. SL=" + DoubleToStr(sl,2) + ", TP=" + DoubleToStr(tp,2);
             LogEvent("ERROR", msg);
-            ShowAlert(msg);
+            if(!IsTesting()) ShowAlert(msg);
         }
     }
     if(ticket > 0) {
@@ -552,14 +552,14 @@ void PlaceManualOrder(ManualOrderParams &mop) {
         int err = GetLastError();
         if(err == 134) {
             LogEvent("ERROR", "OrderSend failed: Not enough money");
-            ShowAlert("OrderSend failed: Not enough money");
+            if(!IsTesting()) ShowAlert("OrderSend failed: Not enough money");
         } else if(err == 135) {
             LogEvent("ERROR", "OrderSend failed: Not enough equity");
-            ShowAlert("OrderSend failed: Not enough equity");
+            if(!IsTesting()) ShowAlert("OrderSend failed: Not enough equity");
         } else {
             string msg = "OrderSend failed: Error code " + IntegerToString(err);
             LogEvent("ERROR", msg);
-            ShowAlert(msg);
+            if(!IsTesting()) ShowAlert(msg);
         }
     }
 }
@@ -641,7 +641,7 @@ void TrailingStopLogic() {
                     bool mod = OrderModify(OrderTicket(), entry, entry, OrderTakeProfit(), 0, clrBlue);
                     if(mod) {
                         LogEvent("TRAIL", "Buy SL moved to breakeven (3rd level)");
-                        ShowAlert("Buy SL moved to breakeven (3rd level)");
+                        if(!IsTesting()) ShowAlert("Buy SL moved to breakeven (3rd level)");
                     }
                 }
                 // Move SL to first ladder level at 6th ladder level (Buy)
@@ -649,7 +649,7 @@ void TrailingStopLogic() {
                     bool mod = OrderModify(OrderTicket(), entry, entry+ladderStep, OrderTakeProfit(), 0, clrBlue);
                     if(mod) {
                         LogEvent("TRAIL", "Buy SL moved to first ladder level (6th level)");
-                        ShowAlert("Buy SL moved to first ladder level (6th level)");
+                        if(!IsTesting()) ShowAlert("Buy SL moved to first ladder level (6th level)");
                     }
                 }
                 // Move SL to breakeven at 3rd ladder level (Sell)
@@ -657,7 +657,7 @@ void TrailingStopLogic() {
                     bool mod = OrderModify(OrderTicket(), entry, entry, OrderTakeProfit(), 0, clrRed);
                     if(mod) {
                         LogEvent("TRAIL", "Sell SL moved to breakeven (3rd level)");
-                        ShowAlert("Sell SL moved to breakeven (3rd level)");
+                        if(!IsTesting()) ShowAlert("Sell SL moved to breakeven (3rd level)");
                     }
                 }
                 // Move SL to first ladder level at 6th ladder level (Sell)
@@ -665,7 +665,7 @@ void TrailingStopLogic() {
                     bool mod = OrderModify(OrderTicket(), entry, entry-ladderStep, OrderTakeProfit(), 0, clrRed);
                     if(mod) {
                         LogEvent("TRAIL", "Sell SL moved to first ladder level (6th level)");
-                        ShowAlert("Sell SL moved to first ladder level (6th level)");
+                        if(!IsTesting()) ShowAlert("Sell SL moved to first ladder level (6th level)");
                     }
                 }
             }
