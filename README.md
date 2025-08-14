@@ -148,3 +148,10 @@ This command downloads the script, makes it executable and runs it. You only nee
     &copy; 2025 Moh Hamzawi. All rights reserved.<br>
     <sub>Developed by MHKAANICHE.<br>For support or questions, please refer to the project documentation.</sub>
 </div>
+
+
+## Building the DLL Terminal commands 
+cd /workspaces/Hamzawi_Project/Version2/MT4_integration/library
+i686-w64-mingw32-windres GoldenCandleEA_GUI.rc -O coff -o GoldenCandleEA_GUI_res.o
+i686-w64-mingw32-g++ -I../include -shared -o GoldenCandleEA_GUI.dll GoldenCandleEA_GUI.cpp GoldenCandleEA_GUI_res.o -static -mwindows
+mv GoldenCandleEA_GUI.dll ../../Delivery_Package/
