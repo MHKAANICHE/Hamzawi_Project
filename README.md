@@ -1,5 +1,3 @@
-
-
 <!-- Banner image for GitHub (optional, can be replaced with your own) -->
 <p align="center">
   <img src="https://img.icons8.com/ios-filled/100/2a5d9f/robot-2.png" alt="EA Icon" width="90"/>
@@ -121,7 +119,28 @@ See `Technical_Documentation.md` for a detailed technical description of the EA 
 > The EA is robust, explicit, and covers nearly all client requirements. The only possible gaps are in EMA cross logic timing, multi-trade support, persistent state, and parameter change logging. If the client needs any of these, further refinement is recommended.
 
 Let me know if you want to address any of these points or need a more detailed review!
-    </div>
+
+## 🐧 Install Terminal on Linux
+
+The terminal runs on Linux using Wine. Wine is a free compatibility layer that allows application software developed for Microsoft Windows to run on Unix-like operating systems.
+
+We have prepared a special script to make the installation process as simple as possible. The script will automatically detect your system version, based on which it will download and install the appropriate Wine package. After that, it will download and run the platform installer.
+
+To start the installation, open the command line (Terminal) and specify the relevant command:
+
+**For Ubuntu:**
+
+```bash
+wget https://download.mql5.com/cdn/web/metaquotes.software.corp/mt4/mt4ubuntu.sh ; chmod +x mt4ubuntu.sh ; ./mt4ubuntu.sh
+```
+
+**For Debian:**
+
+```bash
+wget https://download.mql5.com/cdn/web/metaquotes.software.corp/mt4/mt4debian.sh ; chmod +x mt4debian.sh ; ./mt4debian.sh
+```
+
+This command downloads the script, makes it executable and runs it. You only need to enter your account password to allow installation.
 
 ---
 

@@ -1,0 +1,18 @@
+// GoldenCandleEA_GUI.rc
+// Resource script for GoldenCandleEA_GUI.cpp
+
+#include <windows.h>
+
+101 DIALOGEX 0,0,260,160
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Golden Candle EA Control"
+FONT 9, "Segoe UI"
+BEGIN
+    LTEXT "Status: ",1010,20,10,220,12,SS_LEFT
+    PUSHBUTTON "Pause Trading",1001,20,30,100,24
+    PUSHBUTTON "Skip Level",1002,140,30,100,24
+    PUSHBUTTON "Manual Order",1003,20,70,100,24
+    PUSHBUTTON "Adjust Min Size",1004,140,70,100,24
+    PUSHBUTTON "Ignore Alert",1005,20,110,100,24
+    DEFPUSHBUTTON "Close",IDCANCEL,140,110,100,24
+END
