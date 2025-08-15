@@ -84,7 +84,6 @@ See `Technical_Documentation.md` for a detailed technical description of the EA 
 - **b. EMA Cross Logic:**
   - EMA cross entries are allowed on every bar after the first Golden Candle, not just immediately after a Golden Candle. If the client wants EMA cross entries only when a Golden Candle is present, this logic should be tightened.
 - **c. Trade Management:**
-  - The EA only manages one trade at a time (`inTrade` flag). If the client wants multiple simultaneous trades (e.g., grid or scaling), this would need to be expanded.
 - **d. Persistent State:**
   - The `goldenCandleAppeared` flag is not persistent across EA restarts or chart reloads. If the EA is restarted, it will re-detect the first Golden Candle. If true persistence is required, this should be saved to a file or GlobalVariable.
 - **e. Market Gaps and Slippage:**
@@ -101,14 +100,10 @@ See `Technical_Documentation.md` for a detailed technical description of the EA 
 - ❓ If the client wants a user manual or more detailed in-code comments, this could be expanded.
 
 ### 4. Summary Table
+
 | Requirement                  | Status | Comment                                      |
 |------------------------------|:------:|----------------------------------------------|
 | Golden Candle detection      |   ✔️   | Fully implemented, visual and logged         |
-| Entry/exit logic             |   ✔️   | All rules present, robust                    |
-| Lot progression              |   ✔️   | Table, capping, and logging                  |
-| Chart visuals                |   ✔️   | Entry, SL, TP, Golden Candle rectangles      |
-| Logging                      |   ✔️   | All key actions, errors, and setup logged    |
-| Robustness (retry, SL/TP)    |   ✔️   | OrderSend retry, SL/TP adjust, fallback      |
 | User adjustability           |   ✔️   | All key params are extern                    |
 | EMA cross logic              |   ⚠️   | May need tightening if only after Golden Candle |
 | Multi-trade support          |   ❌   | Only one trade at a time                     |
@@ -128,21 +123,10 @@ We have prepared a special script to make the installation process as simple as 
 
 To start the installation, open the command line (Terminal) and specify the relevant command:
 
-**For Ubuntu:**
-
-```bash
-wget https://download.mql5.com/cdn/web/metaquotes.software.corp/mt4/mt4ubuntu.sh ; chmod +x mt4ubuntu.sh ; ./mt4ubuntu.sh
 ```
-
-**For Debian:**
 
 ```bash
 wget https://download.mql5.com/cdn/web/metaquotes.software.corp/mt4/mt4debian.sh ; chmod +x mt4debian.sh ; ./mt4debian.sh
-```
-
-This command downloads the script, makes it executable and runs it. You only need to enter your account password to allow installation.
-
----
 
 <div align="center">
     &copy; 2025 Moh Hamzawi. All rights reserved.<br>

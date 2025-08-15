@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head><title>Edge Case UI</title></head>
+<body>
+    <label for="input1">Name:</label>
+    <input id="input1" type="text" value="Alice">
+    <input id="input1" type="text" value="Bob"> <!-- Duplicate ID -->
+    <label for="missing_input">Missing Input:</label>
+    <div id="container1">
+        <div id="container2">
+            <div id="container3">
+                <div id="container4">
+                    <div id="container5"> <!-- Excessive depth -->
+                        <input id="deep_input" type="text">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <customtag id="custom1">Unsupported Element</customtag>
+</body>
+</html>

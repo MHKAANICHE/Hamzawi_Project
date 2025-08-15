@@ -6,17 +6,6 @@ validation_report = {
     'errors': [],
     'unsupported': set(),
 }
-# Unsupported element feedback and reporting
-supported_tags = {'label', 'input', 'select', 'ul', 'div', 'progress', 'button'}
-ignored_elements = []
-for elem in soup.find_all(True):
-    if elem.name not in supported_tags:
-        ignored_elements.append(elem.name)
-        validation_report['unsupported'].add(elem.name)
-if ignored_elements:
-    validation_report['warnings'].append(
-        f"Ignored/unsupported HTML elements found: {set(ignored_elements)}. Suggestion: Use only supported elements: label, input, select, ul (listbox), div (groupbox/tabcontrol), progress, button."
-    )
 #!/usr/bin/env python3
 """
 html_to_winapi.py: Convert standard HTML sketch to C++ OOP WinAPI GUI code
@@ -95,8 +84,12 @@ def get_or_assign_id(reg, html_id, next_id):
     """
     Assign a persistent numeric ID for a given HTML element ID.
     If already assigned, reuse; otherwise, assign next available.
+    Prevents duplicate assignment in the same run.
     """
     if html_id in reg:
+        if reg[html_id] in used_ids:
+            validation_report['warnings'].append(f"Duplicate HTML id '{html_id}' detected; skipping assignment.")
+            return reg[html_id], next_id
         return reg[html_id], next_id
     reg[html_id] = next_id
     return next_id, next_id+1
@@ -109,9 +102,16 @@ if len(sys.argv) < 2:
 with open(sys.argv[1], 'r', encoding='utf-8') as f:
     soup = BeautifulSoup(f, 'html.parser')
 
-registry = load_registry()
-next_id = max(registry.values(), default=100) + 1
-used_ids = set(registry.values())
+
+# If registry file does not exist, start fresh
+if not os.path.exists(REGISTRY_FILE):
+    registry = {}
+    next_id = 101
+    used_ids = set()
+else:
+    registry = load_registry()
+    next_id = max(registry.values(), default=100) + 1
+    used_ids = set(registry.values())
 
 cpp_lines = []
 cpp_lines.append('// Auto-generated C++ WinAPI GUI code from HTML sketch')
@@ -213,18 +213,26 @@ for label in labels:
 # Map input IDs to label text for later pairing
 label_for_map = {label.get('for'): label.text.strip() for label in labels if label.get('for')}
 
+
+
+# Track HTML IDs seen in this run to prevent duplicates
+seen_html_ids = set()
+# Generate C++ code for input elements
+for inp in inputs:
     typ = inp.get('type', 'text')
     html_id = inp.get('id', typ)
+    if html_id in seen_html_ids:
+        validation_report['warnings'].append(f"Duplicate HTML id '{html_id}' detected; skipping element.")
+        continue
+    seen_html_ids.add(html_id)
     id_val, next_id = get_or_assign_id(registry, html_id, next_id)
-    if id_val in used_ids:
-        print(f"ERROR: Duplicate ID {id_val} for {html_id}")
-        sys.exit(1)
     used_ids.add(id_val)
     val = inp.get('value', '')
     label_text = label_for_map.get(html_id, '')
     x, y_val, w, h = get_layout_attrs(inp)
-        for handler in handlers:
-            cpp_lines.append(f'// Event: {handler} for {html_id} (stub to be implemented)')
+    handlers = parse_event_attrs(inp, html_id)
+    for handler in handlers:
+        cpp_lines.append(f'// Event: {handler} for {html_id} (stub to be implemented)')
     if typ == 'text':
         if label_text:
             cpp_lines.append(f'// Label: {label_text} for input {html_id}')
@@ -235,11 +243,8 @@ label_for_map = {label.get('for'): label.text.strip() for label in labels if lab
         cpp_lines.append(f'auto pass_{html_id} = new GuiEdit(L"", {id_val}, true); elements.push_back(pass_{html_id}); pass_{html_id}->Create(parent, {x}, {y_val}, {w}, {h}); y += 30;')
     elif typ == 'checkbox':
         if label_text:
-        handlers = parse_event_attrs(sel, html_id)
             cpp_lines.append(f'// Label: {label_text} for checkbox {html_id}')
         cpp_lines.append(f'auto check_{html_id} = new GuiCheckBox(L"{html_id}", {id_val}); elements.push_back(check_{html_id}); check_{html_id}->Create(parent, {x}, {y_val}, 100, {h}); y += 30;')
-        for handler in handlers:
-            cpp_lines.append(f'// Event: {handler} for {html_id} (stub to be implemented)')
     elif typ == 'radio':
         if label_text:
             cpp_lines.append(f'// Label: {label_text} for radio {html_id}')
@@ -251,128 +256,7 @@ label_for_map = {label.get('for'): label.text.strip() for label in labels if lab
         maxv = inp.get('max', '100')
         valv = inp.get('value', '50')
         cpp_lines.append(f'auto slider_{html_id} = new GuiSlider({id_val}, {minv}, {maxv}, {valv}); elements.push_back(slider_{html_id}); slider_{html_id}->Create(parent, {x}, {y_val}, {w}, {h}); y += 30;')
-        handlers = parse_event_attrs(ul, html_id)
 
-# Warn for multiple labels for same input
-        for handler in handlers:
-            cpp_lines.append(f'// Event: {handler} for {html_id} (stub to be implemented)')
-label_counts = {}
-for label in soup.find_all('label'):
-    for_attr = label.get('for')
-    if for_attr:
-        label_counts[for_attr] = label_counts.get(for_attr, 0) + 1
-for k, v in label_counts.items():
-    if v > 1:
-        validation_report['warnings'].append(f"Multiple labels reference input '{k}'")
-
-for inp in soup.find_all('input'):
-    typ = inp.get('type', 'text')
-    html_id = inp.get('id', typ)
-    id_val, next_id = get_or_assign_id(registry, html_id, next_id)
-        handlers = parse_event_attrs(div, html_id)
-        for handler in handlers:
-            cpp_lines.append(f'// Event: {handler} for {html_id} (stub to be implemented)')
-    if id_val in used_ids:
-        validation_report['errors'].append(f"Duplicate ID {id_val} for {html_id}")
-        print(f"ERROR: Duplicate ID {id_val} for {html_id}")
-        sys.exit(1)
-    used_ids.add(id_val)
-    val = inp.get('value', '')
-    if typ == 'text':
-        cpp_lines.append(f'auto edit_{html_id} = new GuiEdit(L"{val}", {id_val}); elements.push_back(edit_{html_id}); edit_{html_id}->Create(parent, 10, y, 200, 24); y += 30;')
-    elif typ == 'password':
-        cpp_lines.append(f'auto pass_{html_id} = new GuiEdit(L"", {id_val}, true); elements.push_back(pass_{html_id}); pass_{html_id}->Create(parent, 10, y, 200, 24); y += 30;')
-    elif typ == 'checkbox':
-        cpp_lines.append(f'auto check_{html_id} = new GuiCheckBox(L"{html_id}", {id_val}); elements.push_back(check_{html_id}); check_{html_id}->Create(parent, 10, y, 100, 24); y += 30;')
-    elif typ == 'radio':
-        cpp_lines.append(f'auto radio_{html_id} = new GuiRadioButton(L"{html_id}", {id_val}, 10, y, 100, 24); elements.push_back(radio_{html_id}); radio_{html_id}->Create(parent); y += 30;')
-    elif typ == 'range':
-        minv = inp.get('min', '0')
-        maxv = inp.get('max', '100')
-        valv = inp.get('value', '50')
-        cpp_lines.append(f'auto slider_{html_id} = new GuiSlider({id_val}, {minv}, {maxv}, {valv}); elements.push_back(slider_{html_id}); slider_{html_id}->Create(parent, 10, y, 200, 24); y += 30;')
-
-    html_id = sel.get('id', 'combo')
-    id_val, next_id = get_or_assign_id(registry, html_id, next_id)
-    if id_val in used_ids:
-        validation_report['errors'].append(f"Duplicate ID {id_val} for {html_id}")
-        print(f"ERROR: Duplicate ID {id_val} for {html_id}")
-        sys.exit(1)
-    used_ids.add(id_val)
-    x, y_val, w, h = get_layout_attrs(sel)
-    cpp_lines.append(f'auto combo_{html_id} = new GuiComboBox({id_val}); elements.push_back(combo_{html_id}); combo_{html_id}->Create(parent, {x}, {y_val}, 120, {h});')
-    for opt in sel.find_all('option'):
-        cpp_lines.append(f'combo_{html_id}->AddItem(L"{opt.text.strip()}");')
-        handlers = parse_event_attrs(prog, html_id)
-        for handler in handlers:
-            cpp_lines.append(f'// Event: {handler} for {html_id} (stub to be implemented)')
-    cpp_lines.append('y += 30;')
-
-    html_id = ul.get('id', 'list')
-    id_val, next_id = get_or_assign_id(registry, html_id, next_id)
-    if id_val in used_ids:
-        validation_report['errors'].append(f"Duplicate ID {id_val} for {html_id}")
-        print(f"ERROR: Duplicate ID {id_val} for {html_id}")
-        sys.exit(1)
-    used_ids.add(id_val)
-    x, y_val, w, h = get_layout_attrs(ul)
-    cpp_lines.append(f'auto list_{html_id} = new GuiListBox({id_val}); elements.push_back(list_{html_id}); list_{html_id}->Create(parent, {x}, {y_val}, 120, 60);')
-    for li in ul.find_all('li'):
-        handlers = parse_event_attrs(btn, html_id)
-        for handler in handlers:
-            cpp_lines.append(f'// Event: {handler} for {html_id} (stub to be implemented)')
-        cpp_lines.append(f'list_{html_id}->AddItem(L"{li.text.strip()}");')
-    cpp_lines.append('y += 70;')
-
-    html_id = div.get('id', 'group')
-    id_val, next_id = get_or_assign_id(registry, html_id, next_id)
-    if id_val in used_ids:
-        validation_report['errors'].append(f"Duplicate ID {id_val} for {html_id}")
-        print(f"ERROR: Duplicate ID {id_val} for {html_id}")
-        sys.exit(1)
-    used_ids.add(id_val)
-    container_depth += 1
-    validate_container_depth(container_depth)
-    x, y_val, w, h = get_layout_attrs(div)
-    cpp_lines.append(f'auto group_{html_id} = new GuiGroupBox(L"{html_id}", {id_val}, {x}, {y_val}, {w}, {h}); elements.push_back(group_{html_id}); group_{html_id}->Create(parent);')
-    container_depth -= 1
-
-    html_id = div.get('id', 'tab')
-    id_val, next_id = get_or_assign_id(registry, html_id, next_id)
-    if id_val in used_ids:
-        validation_report['errors'].append(f"Duplicate ID {id_val} for {html_id}")
-        print(f"ERROR: Duplicate ID {id_val} for {html_id}")
-        sys.exit(1)
-    used_ids.add(id_val)
-    container_depth += 1
-    validate_container_depth(container_depth)
-    x, y_val, w, h = get_layout_attrs(div)
-    cpp_lines.append(f'auto tab_{html_id} = new GuiTab({id_val}, {x}, {y_val}, {w}, 40, TabDock::Top); elements.push_back(tab_{html_id});')
-    for btn in div.find_all('button'):
-        cpp_lines.append(f'tab_{html_id}->AddPage(L"{btn.text.strip()}");')
-    cpp_lines.append(f'tab_{html_id}->Create(parent); y += 50;')
-    container_depth -= 1
-
-    html_id = prog.get('id', 'progress')
-    id_val, next_id = get_or_assign_id(registry, html_id, next_id)
-    if id_val in used_ids:
-        print(f"ERROR: Duplicate ID {id_val} for {html_id}")
-        sys.exit(1)
-    used_ids.add(id_val)
-    x, y_val, w, h = get_layout_attrs(prog)
-    val = prog.get('value', '0')
-    maxv = prog.get('max', '100')
-    cpp_lines.append(f'auto progress_{html_id} = new GuiProgressBar({id_val}, {x}, {y_val}, {w}, {h}, 0, {maxv}, {val}); elements.push_back(progress_{html_id}); progress_{html_id}->Create(parent); y += 30;')
-
-    html_id = btn.get('id', 'btn')
-    id_val, next_id = get_or_assign_id(registry, html_id, next_id)
-    if id_val in used_ids:
-        print(f"ERROR: Duplicate ID {id_val} for {html_id}")
-        sys.exit(1)
-    used_ids.add(id_val)
-    x, y_val, w, h = get_layout_attrs(btn)
-    text = btn.text.strip()
-    cpp_lines.append(f'auto btn_{html_id} = new GuiButton(L"{text}", {id_val}, {x}, {y_val}, 60, {h}); elements.push_back(btn_{html_id}); btn_{html_id}->Create(parent); y += 30;')
 
 
 save_registry(registry)

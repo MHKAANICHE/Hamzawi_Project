@@ -10,7 +10,34 @@
 - **Demo Dialog**: A working demo dialog with all controls and event routing is available.
 
 
-## HTML-to-WinAPI Converter Workflow
+
+## Integration, Testing, and Enhancement Plan
+
+### 1. Integration
+- End-to-end test: Run converter, generate C++ code, build DLL, verify GUI in MT4.
+- AUTOGEN marker protection: Confirm manual code outside AUTOGEN regions is preserved.
+- Event handler stubs: Ensure generated stubs are easy to implement.
+
+### 2. Automated Testing
+- Add Python unit tests for converter functions (ID registry, label pairing, validation report).
+- Create sample HTML sketches (valid, edge cases, unsupported elements) and verify output/validation.
+- Compile generated C++ code and run in test harness/demo EA.
+
+### 3. Enhancements
+- Integrate with C++ layout manager for automatic arrangement.
+- Add support for more HTML attributes (tooltips, default values, disabled state).
+- Allow user-defined mappings for custom HTML tags.
+- Add advanced validation (accessibility, tab order, event handler completeness).
+- Add CLI options for dry-run, verbose output, selective regeneration.
+
+### 4. Documentation & Onboarding
+- Expand README with integration guide, troubleshooting, FAQ.
+- Provide minimal working example (HTML + C++ + EA).
+- Continue improving inline code comments.
+
+### 5. Continuous Improvement
+- Encourage user feedback and feature suggestions.
+- Tag releases and document changes in README.
 
 ### Usage
 
