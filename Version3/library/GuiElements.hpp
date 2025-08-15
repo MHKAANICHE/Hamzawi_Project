@@ -1,3 +1,77 @@
+class GuiProgressBar : public GuiElement {
+    int minValue = 0;
+    int maxValue = 100;
+    int curValue = 0;
+    int xpos, ypos, width, height;
+public:
+    GuiProgressBar(int i, int x, int y, int w, int h, int minV = 0, int maxV = 100, int curV = 0)
+        : xpos(x), ypos(y), width(w), height(h), minValue(minV), maxValue(maxV), curValue(curV) { id = i; }
+    void Create(HWND parent) override {
+        hwnd = CreateWindowW(L"msctls_progress32", NULL, WS_VISIBLE | WS_CHILD, xpos, ypos, width, height, parent, (HMENU)id, NULL, NULL);
+        SendMessageW(hwnd, PBM_SETRANGE, 0, MAKELPARAM(minValue, maxValue));
+        SendMessageW(hwnd, PBM_SETPOS, curValue, 0);
+    }
+    void SetValue(int v) {
+        curValue = v;
+        if(hwnd) SendMessageW(hwnd, PBM_SETPOS, v, 0);
+    }
+    int GetValue() const {
+        return curValue;
+    }
+    void SetRange(int minV, int maxV) {
+        minValue = minV; maxValue = maxV;
+        if(hwnd) SendMessageW(hwnd, PBM_SETRANGE, 0, MAKELPARAM(minValue, maxValue));
+    }
+};
+// Tab docking options
+enum class TabDock { Top, Bottom, Left, Right };
+
+class GuiTab : public GuiElement {
+    int id;
+    TabDock dock = TabDock::Top;
+    std::vector<std::wstring> pages;
+    int xpos, ypos, width, height;
+    int curSel = 0;
+    std::function<void(int)> onSelect;
+public:
+    GuiTab(int i, int x, int y, int w, int h, TabDock d = TabDock::Top)
+        : id(i), xpos(x), ypos(y), width(w), height(h), dock(d) {}
+    void AddPage(const std::wstring& name) { pages.push_back(name); }
+    void Create(HWND parent) override {
+        hwnd = CreateWindowW(L"SysTabControl32", NULL, WS_VISIBLE | WS_CHILD, xpos, ypos, width, height, parent, (HMENU)id, NULL, NULL);
+        TCITEMW tie = {0};
+        tie.mask = TCIF_TEXT;
+        for(size_t i=0; i<pages.size(); ++i) {
+            tie.pszText = (LPWSTR)pages[i].c_str();
+            TabCtrl_InsertItem(hwnd, i, &tie);
+        }
+        TabCtrl_SetCurSel(hwnd, curSel);
+        // Docking logic (visual only, developer can choose position)
+        // Top: default, Bottom: move to bottom, Left/Right: vertical tabs (requires custom drawing)
+        // For now, just position based on dock
+        // (Advanced: implement vertical tabs if needed)
+    }
+    void SetCurSel(int idx) {
+        curSel = idx;
+        if(hwnd) TabCtrl_SetCurSel(hwnd, idx);
+    }
+    int GetCurSel() const {
+        if(hwnd) return TabCtrl_GetCurSel(hwnd);
+        return curSel;
+    }
+    void HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) override {
+        if(msg == WM_NOTIFY && ((LPNMHDR)lParam)->idFrom == id) {
+            LPNMHDR nmhdr = (LPNMHDR)lParam;
+            if(nmhdr->code == TCN_SELCHANGE) {
+                curSel = GetCurSel();
+                if(onSelect) onSelect(curSel);
+            }
+        }
+    }
+    void SetOnSelect(std::function<void(int)> handler) { onSelect = handler; }
+    TabDock GetDock() const { return dock; }
+    void SetDock(TabDock d) { dock = d; }
+};
 // OOP GUI base and button with event handler
 #pragma once
 #include <windows.h>
@@ -156,31 +230,84 @@ public:
 
 class GuiRadioButton : public GuiElement {
     std::wstring text;
-    int id;
+    bool selected;
+    std::function<void(bool)> onSelect;
 public:
-    GuiRadioButton(const std::wstring& t, int i) : text(t), id(i) {}
-    void Create(HWND parent, int x, int y, int w, int h) override {
-        hwnd = CreateWindowW(L"BUTTON", text.c_str(), WS_VISIBLE | WS_CHILD | BS_RADIOBUTTON, x, y, w, h, parent, (HMENU)id, NULL, NULL);
+    GuiRadioButton(const std::wstring& t, int i, int x, int y, int w, int h)
+        : text(t), selected(false) {
+        id = i; xpos = x; ypos = y; width = w; height = h;
     }
+    void Create(HWND parent) override {
+        hwnd = CreateWindowW(L"BUTTON", text.c_str(),
+            WS_VISIBLE | WS_CHILD | BS_AUTORADIOBUTTON,
+            xpos, ypos, width, height, parent, (HMENU)id, NULL, NULL);
+        SendMessageW(hwnd, BM_SETCHECK, selected ? BST_CHECKED : BST_UNCHECKED, 0);
+    }
+    void SetChecked(bool check) {
+        selected = check;
+        if (hwnd) SendMessageW(hwnd, BM_SETCHECK, check ? BST_CHECKED : BST_UNCHECKED, 0);
+    }
+    bool GetChecked() const { return selected; }
+    void HandleMessage(WPARAM wParam) override {
+        if (LOWORD(wParam) == id) {
+            selected = SendMessageW(hwnd, BM_GETCHECK, 0, 0) == BST_CHECKED;
+            if (onSelect) onSelect(selected);
+        }
+    }
+    void SetOnSelect(std::function<void(bool)> handler) { onSelect = handler; }
+};
 };
 
 class GuiSlider : public GuiElement {
-    int id;
-public:
-    GuiSlider(int i) : id(i) {}
+    int minValue = 0;
+    int maxValue = 100;
+    int curValue = 0;
+    std::function<void(int)> onChange;
+    GuiSlider(int i, int minV, int maxV, int curV) {
+        id = i;
+        minValue = minV;
+        maxValue = maxV;
+        curValue = curV;
+    }
     void Create(HWND parent, int x, int y, int w, int h) override {
         hwnd = CreateWindowW(L"msctls_trackbar32", NULL, WS_VISIBLE | WS_CHILD | TBS_AUTOTICKS, x, y, w, h, parent, (HMENU)id, NULL, NULL);
+        SendMessageW(hwnd, TBM_SETRANGE, TRUE, MAKELPARAM(minValue, maxValue));
+        SendMessageW(hwnd, TBM_SETPOS, TRUE, curValue);
     }
+    void SetValue(int v) {
+        curValue = v;
+        if(hwnd) SendMessageW(hwnd, TBM_SETPOS, TRUE, v);
+    }
+    int GetValue() const {
+        if(hwnd) return (int)SendMessageW(hwnd, TBM_GETPOS, 0, 0);
+        return curValue;
+    }
+    void HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) override {
+        if(msg == WM_HSCROLL && (HWND)lParam == hwnd) {
+            curValue = (int)SendMessageW(hwnd, TBM_GETPOS, 0, 0);
+            if(onChange) onChange(curValue);
+        }
+    }
+    void SetOnChange(std::function<void(int)> handler) { onChange = handler; }
+};
 };
 
 class GuiGroupBox : public GuiElement {
     std::wstring text;
     int id;
+    int xpos, ypos, width, height;
 public:
-    GuiGroupBox(const std::wstring& t, int i) : text(t), id(i) {}
-    void Create(HWND parent, int x, int y, int w, int h) override {
-        hwnd = CreateWindowW(L"BUTTON", text.c_str(), WS_VISIBLE | WS_CHILD | BS_GROUPBOX, x, y, w, h, parent, (HMENU)id, NULL, NULL);
+    GuiGroupBox(const std::wstring& t, int i, int x, int y, int w, int h)
+        : text(t), id(i), xpos(x), ypos(y), width(w), height(h) {}
+    void Create(HWND parent) override {
+        hwnd = CreateWindowW(L"BUTTON", text.c_str(), WS_VISIBLE | WS_CHILD | BS_GROUPBOX, xpos, ypos, width, height, parent, (HMENU)id, NULL, NULL);
     }
+    void SetText(const std::wstring& t) {
+        text = t;
+        if(hwnd) SetWindowTextW(hwnd, text.c_str());
+    }
+    std::wstring GetText() const { return text; }
+};
 };
 
 

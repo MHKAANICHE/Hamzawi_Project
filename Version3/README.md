@@ -9,7 +9,50 @@
 - **String Encoding**: Proper conversion between MQL4 strings and WinAPI wide strings is handled.
 - **Demo Dialog**: A working demo dialog with all controls and event routing is available.
 
-## What Still Has To Be Done
+
+## HTML-to-WinAPI Converter Workflow
+
+### Usage
+
+To convert an HTML UI sketch to C++ WinAPI code:
+
+```bash
+python3 library/html_to_winapi.py library/demo_interface.html library/demo_interface_winapi.cpp
+```
+
+This will update only the AUTOGEN region in the output C++ file, preserving any manual code outside the markers.
+
+### Features
+
+- Persistent, atomic ID registry for WinAPI controls (JSON file)
+- Robust label/input pairing and validation
+- Layout and nesting validation with fallback logic
+- Event handler registry and stub generation
+- Unsupported element feedback and reporting
+- Partial regeneration with AUTOGEN marker protection
+- Comprehensive validation reporting (warnings, errors, unsupported elements)
+
+### Validation Report
+
+After each run, a summary report is printed showing:
+- Warnings (e.g., missing labels, excessive container depth, event handler conflicts)
+- Errors (e.g., duplicate IDs)
+- Unsupported HTML elements
+
+If no issues are found, "No validation issues detected." will be shown.
+
+### Troubleshooting
+
+- If you see "ERROR: Missing or altered AUTOGEN markers", restore the markers in your C++ file.
+- For duplicate IDs, check your HTML for repeated id attributes.
+- For unsupported elements, use only: label, input, select, ul, div, progress, button.
+
+### Extending the Workflow
+
+- Add new supported HTML tags and their C++ mappings in `html_to_winapi.py`.
+- Extend validation_report for new checks.
+- Customize layout attribute parsing in `get_layout_attrs()`.
+
 
 - **Layout Manager**: Implement a simple layout manager class in C++ to arrange GUI elements (vertical/horizontal stacking, spacing, etc.).
     - The EA should only call the layout manager, not individual GUI elements.
