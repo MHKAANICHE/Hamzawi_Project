@@ -214,10 +214,6 @@ for inp in inputs:
         if label_text:
             cpp_lines.append(f'// Label: {label_text} for checkbox {html_id}')
         cpp_lines.append(f'auto check_{html_id} = new GuiCheckBox(L"{html_id}", {id_val}); elements.push_back(check_{html_id}); check_{html_id}->Create(parent, {x}, {y_val}, 100, {h}); y += 30;')
-    elif typ == 'radio':
-        if label_text:
-            cpp_lines.append(f'// Label: {label_text} for radio {html_id}')
-        cpp_lines.append(f'auto radio_{html_id} = new GuiRadioButton(L"{html_id}", {id_val}, {x}, {y_val}, 100, {h}); elements.push_back(radio_{html_id}); radio_{html_id}->Create(parent); y += 30;')
     elif typ == 'range':
         if label_text:
             cpp_lines.append(f'// Label: {label_text} for slider {html_id}')
@@ -227,25 +223,44 @@ for inp in inputs:
         cpp_lines.append(f'auto slider_{html_id} = new GuiSlider({id_val}, {minv}, {maxv}, {valv}); elements.push_back(slider_{html_id}); slider_{html_id}->Create(parent, {x}, {y_val}, {w}, {h}); y += 30;')
 
 
-
-save_registry(registry)
-
-
-# Print validation summary report
-print("\n==== Validation Report ====")
-if validation_report['warnings']:
-    print("Warnings:")
-    for w in validation_report['warnings']:
-        print(f"  - {w}")
-if validation_report['errors']:
-    print("Errors:")
-    for e in validation_report['errors']:
-        print(f"  - {e}")
-if validation_report['unsupported']:
-    print(f"Unsupported HTML elements: {validation_report['unsupported']}")
-if not any([validation_report['warnings'], validation_report['errors'], validation_report['unsupported']]):
-    print("No validation issues detected.")
-
+    inputs = soup.find_all('input')
+    labels = soup.find_all('label')
+    selects = soup.find_all('select')
+    uls = soup.find_all('ul')
+    progs = soup.find_all('progress')
+    buttons = soup.find_all('button')
+    cpp_lines.append(f'// Label: {label_text} for slider {html_id}')
+    # Collect all valid IDs for label pairing
+    valid_label_targets = set()
+    for inp in inputs:
+        valid_label_targets.add(inp.get('id', inp.get('type', '')))
+    for sel in selects:
+        valid_label_targets.add(sel.get('id', ''))
+    for ul in uls:
+        valid_label_targets.add(ul.get('id', ''))
+        minv = inp.get('min', '0')
+    paired_labels = set()
+    for label in labels:
+        text = label.text.strip()
+        for_attr = label.get('for')
+        html_id = label.get('id', text)
+        if for_attr:
+            if for_attr in valid_label_targets:
+                paired_labels.add(for_attr)
+                # Label will be handled with input/select/ul below
+            else:
+                validation_report['warnings'].append(
+                    f"Label '{text}' references missing control '{for_attr}'"
+                )
+        else:
+            # Standalone label
+            id_val, next_id = get_or_assign_id(registry, html_id, next_id)
+            if id_val in used_ids:
+                validation_report['errors'].append(f"Duplicate ID {id_val} for {html_id}")
+                print(f"ERROR: Duplicate ID {id_val} for {html_id}")
+                sys.exit(1)
+            used_ids.add(id_val)
+            cpp_lines.append(f'elements.push_back(new GuiLabel(L"{text}", {id_val}, 10, y, 200, 24)); y += 30;')
 output_path = sys.argv[2] if len(sys.argv) > 2 else None
 autogen_code = '\n'.join(cpp_lines)
 if output_path:
