@@ -5,6 +5,12 @@
 #include <vector>
 #include <functional>
 #include <commctrl.h>
+#include <chrono>
+#include <fstream>
+#include <sstream>
+
+// Extern declaration for logging function
+extern void logWithTimestampToFile(const char* msg, const std::string& logFilePath);
 
 class GuiElement {
 public:
@@ -28,6 +34,8 @@ public:
         bool HandleMessage(UINT msg, WPARAM wParam, LPARAM lParam) override {
             if (msg == WM_COMMAND && LOWORD(wParam) == id && HIWORD(wParam) == BN_CLICKED) {
                 if (onClick) onClick();
+                    // Log button click
+                    logWithTimestampToFile(("[MT4 GUI] Button clicked: " + std::to_string(id)).c_str(), "C:\\Temp\\dll_test_log.txt");
                 return true;
             }
             return false;
@@ -58,6 +66,10 @@ public:
                 GetWindowTextW(hwnd, buf, 255);
                 text = buf;
                 if (onChange) onChange(text);
+                    // Log input value change
+                    std::wstring logMsg = L"[MT4 GUI] Input changed: " + std::to_wstring(id) + L" value: " + text;
+                    std::string logMsgA(logMsg.begin(), logMsg.end());
+                    logWithTimestampToFile(logMsgA.c_str(), "C:\\Temp\\dll_test_log.txt");
                 return true;
             }
             return false;
@@ -90,6 +102,9 @@ public:
             if (msg == WM_COMMAND && LOWORD(wParam) == id && (HIWORD(wParam) == BN_CLICKED || HIWORD(wParam) == BN_DOUBLECLICKED)) {
                 checked = (SendMessageW(hwnd, BM_GETCHECK, 0, 0) == BST_CHECKED);
                 if (onCheck) onCheck(checked);
+                    // Log checkbox state
+                    std::string state = checked ? "checked" : "unchecked";
+                    logWithTimestampToFile(("[MT4 GUI] Checkbox " + std::to_string(id) + " " + state).c_str(), "C:\\Temp\\dll_test_log.txt");
                 return true;
             }
             return false;
@@ -125,6 +140,9 @@ public:
             if (msg == WM_COMMAND && LOWORD(wParam) == id) {
                 selected = SendMessageW(hwnd, BM_GETCHECK, 0, 0) == BST_CHECKED;
                 if (onSelect) onSelect(selected);
+                    // Log radio button selection
+                    std::string state = selected ? "selected" : "deselected";
+                    logWithTimestampToFile(("[MT4 GUI] RadioButton " + std::to_string(id) + " " + state).c_str(), "C:\\Temp\\dll_test_log.txt");
                 return true;
             }
             return false;
@@ -166,6 +184,8 @@ public:
             if (msg == WM_COMMAND && LOWORD(wParam) == id && HIWORD(wParam) == CBN_SELCHANGE) {
                 int sel = GetCurSel();
                 if (onSelect) onSelect(sel);
+                    // Log combo box selection
+                    logWithTimestampToFile(("[MT4 GUI] ComboBox " + std::to_string(id) + " selected: " + std::to_string(sel)).c_str(), "C:\\Temp\\dll_test_log.txt");
                 return true;
             }
             return false;
@@ -216,6 +236,10 @@ public:
             if (msg == WM_COMMAND && LOWORD(wParam) == id && HIWORD(wParam) == LBN_SELCHANGE) {
                 selIndices = GetSelIndices();
                 if (onSelect) onSelect(selIndices);
+                    // Log list box selection
+                    std::string logMsg = "[MT4 GUI] ListBox " + std::to_string(id) + " selected indices: ";
+                    for (int idx : selIndices) logMsg += std::to_string(idx) + ",";
+                    logWithTimestampToFile(logMsg.c_str(), "C:\\Temp\\dll_test_log.txt");
                 return true;
             }
             return false;
@@ -327,6 +351,8 @@ public:
             if(msg == WM_HSCROLL && (HWND)lParam == hwnd) {
                 curValue = (int)SendMessageW(hwnd, TBM_GETPOS, 0, 0);
                 if(onChange) onChange(curValue);
+                    // Log slider value change
+                    logWithTimestampToFile(("[MT4 GUI] Slider " + std::to_string(id) + " value: " + std::to_string(curValue)).c_str(), "C:\\Temp\\dll_test_log.txt");
                 return true;
             }
             return false;

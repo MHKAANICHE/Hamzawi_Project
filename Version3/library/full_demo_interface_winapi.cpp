@@ -69,7 +69,6 @@ void logWithTimestampToFile(const char* msg, const std::string& logFilePath) {
 void PersistentWindowThread(HINSTANCE hInstance, HWND parent, std::string testamentFile) {
     // AUTOGEN: Begin auto-generated GUI code
     std::vector<GuiElement*> elements;
-    int y = 10;
     // ...existing AUTOGEN code will be placed here...
     // AUTOGEN: End auto-generated GUI code
     // Log file path: same as testament file, but with .log extension
@@ -92,31 +91,92 @@ void PersistentWindowThread(HINSTANCE hInstance, HWND parent, std::string testam
     wc.hInstance = hInstance;
     wc.lpszClassName = L"MT4PersistentWindow";
     RegisterClassW(&wc);
-    HWND hWnd = CreateWindowExW(0, wc.lpszClassName, L"MT4 Persistent Window", WS_OVERLAPPEDWINDOW,
-        100, 100, 400, 200, parent, NULL, hInstance, NULL);
+    HWND hWnd = CreateWindowExW(0, wc.lpszClassName, L"MT4 Trading Panel", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+        100, 100, 800, 500, parent, NULL, hInstance, NULL); // Increased window size
+    // Set background color and font for modern look
+    HBRUSH hBrush = CreateSolidBrush(RGB(245, 245, 250));
+    SetClassLongPtr(hWnd, GCLP_HBRBACKGROUND, (LONG_PTR)hBrush);
+    HFONT hFont = CreateFontW(18, 0, 0, 0, FW_MEDIUM, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
+    SendMessageW(hWnd, WM_SETFONT, (WPARAM)hFont, TRUE);
     g_persistentWindow = hWnd;
     g_windowRunning = true;
     ShowWindow(hWnd, SW_SHOW);
     UpdateWindow(hWnd);
     // AUTOGEN START
-// Auto-generated C++ WinAPI GUI code from HTML sketch
-std::vector<GuiElement*> elements;
-int y = 10;
-// Label: Name: for input input_name
-auto edit_input_name = new GuiEdit(L"Alice", 113); elements.push_back(edit_input_name); edit_input_name->Create(parent, 10, 10, 200, 24); y += 30;
-// Label: Name: for slider input_name
-// Label: Password: for password input_password
-auto pass_input_password = new GuiEdit(L"", 114, true); elements.push_back(pass_input_password); pass_input_password->Create(parent, 10, 10, 200, 24); y += 30;
-// Label: Password: for slider input_password
-// Label: Enable: for checkbox input_enable
-auto check_input_enable = new GuiCheckBox(L"input_enable", 115); elements.push_back(check_input_enable); check_input_enable->Create(parent, 10, 10, 100, 24); y += 30;
-// Label: Enable: for slider input_enable
-// Label: Option A: for slider radio_option_a
-// Label: Option B: for slider radio_option_b
-// Label: Value: for slider slider_value
-auto slider_slider_value = new GuiSlider(118, 0, 100, 50); elements.push_back(slider_slider_value); slider_slider_value->Create(parent, 10, 10, 200, 24); y += 30;
-// Label: Value: for slider slider_value
-// AUTOGEN END
+    // Improved layout with padding and spacing
+    int winW = 800, winH = 500;
+    int xCenter = winW / 2;
+    int sectionW = 320;
+    int inputW = 260, inputH = 36, gapY = 56, gapX = 32;
+    int yPad = 60, y = yPad;
+
+    // Centered User Inputs
+    auto edit_input_name = new GuiEdit(L"", 113); elements.push_back(edit_input_name);
+    edit_input_name->Create(hWnd, xCenter - sectionW/2, y, inputW, inputH); y += gapY;
+
+    auto pass_input_password = new GuiEdit(L"", 114, true); elements.push_back(pass_input_password);
+    pass_input_password->Create(hWnd, xCenter - sectionW/2, y, inputW, inputH); y += gapY;
+
+    y += gapY / 2; // Extra space before options
+
+    // Centered Options
+    auto check_input_enable = new GuiCheckBox(L"Enable", 115); elements.push_back(check_input_enable);
+    check_input_enable->Create(hWnd, xCenter - sectionW/2, y, 140, inputH);
+    auto radio_option_a = new GuiRadioButton(L"Option A", 116, xCenter - sectionW/2 + 160, y, 140, inputH); elements.push_back(radio_option_a);
+    radio_option_a->Create(hWnd, xCenter - sectionW/2 + 160, y, 140, inputH);
+    auto radio_option_b = new GuiRadioButton(L"Option B", 117, xCenter - sectionW/2 + 320, y, 140, inputH); elements.push_back(radio_option_b);
+    radio_option_b->Create(hWnd, xCenter - sectionW/2 + 320, y, 140, inputH); y += gapY;
+
+    y += gapY / 2; // Extra space before advanced controls
+
+    // Centered Advanced Controls
+    auto slider_slider_value = new GuiSlider(118, 0, 100, 50); elements.push_back(slider_slider_value);
+    slider_slider_value->Create(hWnd, xCenter - sectionW/2, y, inputW, inputH); y += gapY;
+
+    auto combo_choice = new GuiComboBox(119); combo_choice->AddItem(L"Option 1"); combo_choice->AddItem(L"Option 2"); combo_choice->AddItem(L"Option 3"); elements.push_back(combo_choice);
+    combo_choice->Create(hWnd, xCenter - sectionW/2, y, inputW, inputH); y += gapY;
+
+    auto list_items = new GuiListBox(120); list_items->AddItem(L"Item 1"); list_items->AddItem(L"Item 2"); list_items->AddItem(L"Item 3"); elements.push_back(list_items);
+    list_items->Create(hWnd, xCenter - sectionW/2, y, inputW, 100); y += 110;
+
+    y += gapY / 2; // Extra space before actions
+
+    // Action Buttons at Bottom Center
+    int btnY = winH - yPad - inputH;
+    auto btn_ok = new GuiButton(L"OK", 121); elements.push_back(btn_ok);
+    btn_ok->Create(hWnd, xCenter - 200, btnY, 120, inputH);
+    auto btn_cancel = new GuiButton(L"Cancel", 122); elements.push_back(btn_cancel);
+    btn_cancel->Create(hWnd, xCenter - 60, btnY, 120, inputH);
+    auto btn_apply = new GuiButton(L"Apply", 123); elements.push_back(btn_apply);
+    btn_apply->Create(hWnd, xCenter + 80, btnY, 140, inputH);
+
+    // Apply button event handler: collect values and write to testament file
+    btn_apply->onClick = [=]() {
+        std::ostringstream oss;
+        oss << "name=" << std::string(edit_input_name->GetText().begin(), edit_input_name->GetText().end()) << "\n";
+        oss << "password=" << std::string(pass_input_password->GetText().begin(), pass_input_password->GetText().end()) << "\n";
+        oss << "enable=" << (check_input_enable->GetChecked() ? "1" : "0") << "\n";
+        oss << "option_a=" << (radio_option_a->GetChecked() ? "1" : "0") << "\n";
+        oss << "option_b=" << (radio_option_b->GetChecked() ? "1" : "0") << "\n";
+        oss << "slider=" << slider_slider_value->GetValue() << "\n";
+        oss << "combo=" << combo_choice->GetCurSel() << "\n";
+        oss << "list=";
+        auto selList = list_items->GetSelIndices();
+        for (size_t i = 0; i < selList.size(); ++i) {
+            oss << selList[i];
+            if (i + 1 < selList.size()) oss << ",";
+        }
+        oss << "\n";
+        std::string values = oss.str();
+        logWithTimestampToFile(("[MT4 GUI] Apply clicked. Values:\n" + values).c_str(), "C:\\Temp\\dll_test_log.txt");
+        // Write values to testament file for MT4 EA to read
+        std::ofstream out(testamentFile);
+        if (out.is_open()) {
+            out << values;
+            out.close();
+        }
+    };
+    // AUTOGEN END
 
     HINSTANCE ctrlInstance = GetModuleHandle(NULL);
     // AUTOGEN: Create GUI elements from full_demo_interface.html
