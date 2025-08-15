@@ -1,0 +1,2 @@
+#define IDD_INPUT_DIALOG 101
+#define IDC_EDIT1 1001
