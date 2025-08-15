@@ -5,8 +5,8 @@
 #define ID_CANCEL 2
 
 struct DialogData {
-    wchar_t* buffer;
-    int bufferLen;
+    wchar_t* wbuffer;
+    int wbufferLen;
     int pressedButton;
 };
 
@@ -22,9 +22,9 @@ INT_PTR CALLBACK DialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
         return TRUE;
     case WM_COMMAND:
         if (LOWORD(wParam) == ID_OK) {
-            if (data && data->buffer && data->bufferLen > 0) {
+            if (data && data->wbuffer && data->wbufferLen > 0) {
                 HWND hEdit = GetDlgItem(hDlg, ID_EDIT);
-                GetWindowTextW(hEdit, data->buffer, data->bufferLen);
+                GetWindowTextW(hEdit, data->wbuffer, data->wbufferLen);
             }
             data->pressedButton = ID_OK;
             EndDialog(hDlg, ID_OK);
@@ -45,8 +45,9 @@ INT_PTR CALLBACK DialogProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 }
 
 extern "C" __declspec(dllexport)
-int ShowInputDialog(wchar_t* buffer, int bufferLen) {
-    DialogData data = { buffer, bufferLen, 0 };
+int ShowInputDialog(char* buffer, int bufferLen) {
+    wchar_t wbuffer[256] = {0};
+    DialogData data = { wbuffer, 256, 0 };
     // Create a dialog template in memory
     BYTE dlgTemplate[1024] = {0};
     DLGTEMPLATE* pDlg = (DLGTEMPLATE*)dlgTemplate;
@@ -55,5 +56,7 @@ int ShowInputDialog(wchar_t* buffer, int bufferLen) {
     pDlg->x = 0; pDlg->y = 0; pDlg->cx = 220; pDlg->cy = 120;
     HINSTANCE hInstance = GetModuleHandle(NULL);
     DialogBoxIndirectParamW(hInstance, pDlg, NULL, DialogProc, (LPARAM)&data);
+    // Convert wbuffer to buffer (ANSI)
+    WideCharToMultiByte(CP_ACP, 0, wbuffer, -1, buffer, bufferLen, NULL, NULL);
     return data.pressedButton;
 }

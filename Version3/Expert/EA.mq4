@@ -11,7 +11,7 @@
 //| Import the DLL function                                          |
 //+------------------------------------------------------------------+
 #import "PopupDLL.dll"
-int ShowInputDialog(uchar &buffer[], int bufferLen);
+int ShowInputDialog(char &buffer[], int bufferLen);
 #import
 
 //+------------------------------------------------------------------+
@@ -20,7 +20,7 @@ int ShowInputDialog(uchar &buffer[], int bufferLen);
 int OnInit()
   {
    // Call the DLL on init for demo
-  uchar buffer[256];
+  char buffer[256];
   ArrayInitialize(buffer, 0);
   int res = ShowInputDialog(buffer, 256);
   string userInput = CharArrayToString(buffer);
