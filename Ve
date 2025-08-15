@@ -1,0 +1,7 @@
+// AUTOGEN START
+// Auto-generated C++ WinAPI GUI code from HTML sketch
+std::vector<GuiElement*> elements;
+int y = 10;
+// Label: Name: for input input_name
+auto edit_input_name = new GuiEdit(L"", 113); elements.push_back(edit_input_name); edit_input_name->Create(parent, 10, 10, 200, 24); y += 30;
+// AUTOGEN END

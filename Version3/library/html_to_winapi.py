@@ -1,4 +1,5 @@
 import sys, os, json
+from bs4 import BeautifulSoup
 
 # Validation report structure
 validation_report = {
@@ -6,40 +7,8 @@ validation_report = {
     'errors': [],
     'unsupported': set(),
 }
-#!/usr/bin/env python3
-"""
-html_to_winapi.py: Convert standard HTML sketch to C++ OOP WinAPI GUI code
 
-Usage:
-    python3 html_to_winapi.py <input_html> [output_cpp]
-
-Features:
-    - Persistent, atomic ID registry for WinAPI controls (JSON file)
-    - Robust label/input pairing and validation
-    - Layout and nesting validation with fallback logic
-    - Event handler registry and stub generation
-    - Unsupported element feedback and reporting
-    - Partial regeneration with AUTOGEN marker protection
-    - Comprehensive validation reporting (warnings, errors, unsupported elements)
-
-How it works:
-    1. Parses the HTML UI sketch using BeautifulSoup
-    2. Maps HTML elements to C++ WinAPI GUI classes
-    3. Assigns persistent IDs and validates layout, labels, and events
-    4. Aggregates all validation issues and prints a summary report
-    5. Updates only the AUTOGEN region in the output C++ file, preserving manual code
-
-Extension points:
-    - Add new supported HTML tags and their C++ mappings in supported_tags and main loop
-    - Extend validation_report for new checks
-    - Customize layout attribute parsing in get_layout_attrs()
-
-See README.md for more details and examples.
-"""
-from bs4 import BeautifulSoup
-
-import sys, os, json
-
+SUPPORTED_TAGS = {'input', 'button', 'label'}
 
 # Registry file for persistent WinAPI control IDs
 REGISTRY_FILE = 'winapi_id_registry.json'

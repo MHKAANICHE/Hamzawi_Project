@@ -1,4 +1,34 @@
+## Important Stability Notice: Persistent Window Edge Case
+
+This EA and DLL integration uses a persistent child window for GUI interaction. The workflow is robust and stable under normal usage:
+
+- The child window appears and closes cleanly.
+- Relaunching the EA does not cause errors.
+
+**Edge Case Warning:**
+
+If you close the parent MT4 window (the chart or terminal) before closing the child window, the child window becomes orphaned. Closing the orphaned child window in this state may cause MT4 to crash.
+
+**User Guidance:**
+
+- Always close the child window before closing the parent MT4 window.
+- Avoid leaving orphaned child windows running after the parent is closed.
+
+This is a known limitation of the persistent window approach. The risk is accepted for this integration, but users should be aware and avoid this scenario whenever possible.
 # Version3: OOP WinAPI GUI Toolkit for MT4 EA
+> **Note:** This project is always operated and maintained on GitHub. Please ensure all changes, builds, and documentation updates are performed via the GitHub repository for consistency and collaboration.
+
+## ⚠️ Reliability-First Integration (August 2025)
+
+- **Critical Constraint:** Only safe modal dialogs and simple controls are supported for MT4 DLL integration. Persistent windows, threads, and advanced controls are not supported to ensure platform stability.
+- **Workflow:**
+  1. Create HTML UI sketch using only supported elements (input, button, label).
+  2. Use `auto_html_to_winapi.py` to detect changes and run `html_to_winapi.py` for conversion.
+  3. Review validation report for unsupported features.
+  4. Compile generated C++ code into DLL.
+  5. EA calls DLL modal dialog functions (e.g., `ShowSafeInputDialog`).
+- **Troubleshooting:** If the HTML or generated code includes unsupported features, the converter will warn and skip them. Only modal dialogs are guaranteed to work reliably in MT4.
+- **Best Practice:** Always test for MT4 responsiveness and stability after each change. Prefer minimal, non-blocking UI.
 
 ## What Has Been Realized
 
@@ -48,7 +78,14 @@ python3 library/html_to_winapi.py library/demo_interface.html library/demo_inter
 ```
 
 This will update only the AUTOGEN region in the output C++ file, preserving any manual code outside the markers.
-
+```bash
+sudo apt-get update
+sudo apt-get install mingw-w64
+sudo apt-get install gcc-mingw-w64-i686 g++-mingw-w64-i686
+which i686-w64-mingw32-g++
+i686-w64-mingw32-g++ --version
+i686-w64-mingw32-g++ -shared -o Version3/library/full_demo_interface.dll Version3/library/full_demo_interface_winapi.cpp -static -mwindows
+```
 ### Features
 
 - Persistent, atomic ID registry for WinAPI controls (JSON file)

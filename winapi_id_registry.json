@@ -10,5 +10,6 @@
   "checkbox_test": 109,
   "radio_test1": 110,
   "radio_test2": 111,
-  "slider_test": 112
+  "slider_test": 112,
+  "input_name": 113
 }
