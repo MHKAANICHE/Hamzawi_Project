@@ -53,3 +53,4 @@ void OnTick()
     PersistentWindowHeartbeat();
     // Optionally, add more checks or interactions
 }
+

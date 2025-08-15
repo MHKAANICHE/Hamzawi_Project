@@ -1,33 +1,3 @@
-## Project Overview
-
-This folder contains the stable, production-ready MT4 DLL GUI workflow. All essential files for building and using the DLL are kept here; all other files have been relocated to the `archive` folder for reference.
-
-### Key Files
-- `library/full_demo_interface_winapi.cpp`: Main DLL source code (WinAPI GUI, HTML-to-DLL workflow).
-- `library/full_demo_interface.dll`: Compiled DLL for MT4 integration.
-- `library/GuiElements.hpp`: Custom WinAPI GUI element class definitions.
-
-### Developer Instructions
-1. **Build the DLL:**
-  ```bash
-  i686-w64-mingw32-g++ -shared -o library/full_demo_interface.dll library/full_demo_interface_winapi.cpp -static -mwindows -lcomctl32
-  ```
-2. **Update GUI from HTML:**
-  - Use the generator (now in `archive`) to convert HTML sketches to C++ code and insert into the AUTOGEN region of `full_demo_interface_winapi.cpp`.
-  - Ensure all controls use `hWnd` as parent.
-3. **Extend GUI:**
-  - Add new controls or features by editing the HTML and regenerating, or manually updating the C++ code.
-
-### User Instructions
-1. **DLL Usage:**
-  - Place `full_demo_interface.dll` in your MT4 `Libraries` folder.
-  - Use the provided EA or script to call DLL functions and display the GUI.
-2. **GUI Behavior:**
-  - The child window is persistent and stable; all controls are mapped from the HTML sketch.
-  - Edge case: Always close the child window before closing the parent MT4 window to avoid crashes.
-
-### Archive Policy
-All non-essential files (generators, test scripts, old HTML sketches, etc.) are moved to `/archive` for reference. Only the files governing the current DLL workflow remain in the main folder.
 ## Important Stability Notice: Persistent Window Edge Case
 
 This EA and DLL integration uses a persistent child window for GUI interaction. The workflow is robust and stable under normal usage:

@@ -100,20 +100,22 @@ void PersistentWindowThread(HINSTANCE hInstance, HWND parent, std::string testam
     UpdateWindow(hWnd);
     // AUTOGEN START
 // Auto-generated C++ WinAPI GUI code from HTML sketch
-    // Label: Name: for input input_name
-    auto edit_input_name = new GuiEdit(L"Alice", 113); elements.push_back(edit_input_name); edit_input_name->Create(parent, 10, 10, 200, 24); y += 30;
-    // Label: Name: for slider input_name
-    // Label: Password: for password input_password
-    auto pass_input_password = new GuiEdit(L"", 114, true); elements.push_back(pass_input_password); pass_input_password->Create(parent, 10, 10, 200, 24); y += 30;
-    // Label: Password: for slider input_password
-    // Label: Enable: for checkbox input_enable
-    auto check_input_enable = new GuiCheckBox(L"input_enable", 115); elements.push_back(check_input_enable); check_input_enable->Create(parent, 10, 10, 100, 24); y += 30;
-    // Label: Enable: for slider input_enable
-    // Label: Option A: for slider radio_option_a
-    // Label: Option B: for slider radio_option_b
-    // Label: Value: for slider slider_value
-    auto slider_slider_value = new GuiSlider(118, 0, 100, 50); elements.push_back(slider_slider_value); slider_slider_value->Create(parent, 10, 10, 200, 24); y += 30;
-    // Label: Value: for slider slider_value
+std::vector<GuiElement*> elements;
+int y = 10;
+// Label: Name: for input input_name
+auto edit_input_name = new GuiEdit(L"Alice", 113); elements.push_back(edit_input_name); edit_input_name->Create(parent, 10, 10, 200, 24); y += 30;
+// Label: Name: for slider input_name
+// Label: Password: for password input_password
+auto pass_input_password = new GuiEdit(L"", 114, true); elements.push_back(pass_input_password); pass_input_password->Create(parent, 10, 10, 200, 24); y += 30;
+// Label: Password: for slider input_password
+// Label: Enable: for checkbox input_enable
+auto check_input_enable = new GuiCheckBox(L"input_enable", 115); elements.push_back(check_input_enable); check_input_enable->Create(parent, 10, 10, 100, 24); y += 30;
+// Label: Enable: for slider input_enable
+// Label: Option A: for slider radio_option_a
+// Label: Option B: for slider radio_option_b
+// Label: Value: for slider slider_value
+auto slider_slider_value = new GuiSlider(118, 0, 100, 50); elements.push_back(slider_slider_value); slider_slider_value->Create(parent, 10, 10, 200, 24); y += 30;
+// Label: Value: for slider slider_value
 // AUTOGEN END
 
     HINSTANCE ctrlInstance = GetModuleHandle(NULL);
