@@ -11,7 +11,7 @@
 //| Import the DLL function                                          |
 //+------------------------------------------------------------------+
 #import "PopupDLL.dll"
-int ShowInputDialog(char &buffer[], int bufferLen);
+int ShowBootstrapDialog();
 #import
 
 //+------------------------------------------------------------------+
@@ -20,20 +20,8 @@ int ShowInputDialog(char &buffer[], int bufferLen);
 int OnInit()
   {
    // Call the DLL on init for demo
-  char buffer[256];
-  ArrayInitialize(buffer, 0);
-  int res = ShowInputDialog(buffer, 256);
-  string userInput = CharArrayToString(buffer);
-  if(res == 1)
-  {
-    Comment("OK clicked. Input: ", userInput);
-    Print("OK clicked. Input: ", userInput);
-  }
-  else
-  {
-    Comment("Cancel clicked.");
-    Print("Cancel clicked.");
-  }
+  int result = ShowBootstrapDialog();
+  Print("Dialog result: ", result);
   return(INIT_SUCCEEDED);
   }
 //+------------------------------------------------------------------+
