@@ -1,13 +1,53 @@
-<!-- Landing Page Mockup -->
+
+<!DOCTYPE html>
 <html>
-<head><title>Golden Candle EA - Landing</title></head>
+<head>
+  <title>WinAPI GUI Demo</title>
+</head>
 <body>
-  <h1>Golden Candle EA</h1>
-  <p>Status: <span id="status">Idle</span></p>
-  <button>Start Trading</button>
-  <button>Settings</button>
-  <button>Help</button>
-  <div id="alerts"></div>
+  <label for="input_test">Text Input:</label>
+  <input type="text" id="input_test" value="CopilotTest">
+  <br>
+  <label for="checkbox_test">Checkbox:</label>
+  <input type="checkbox" id="checkbox_test">
+  <br>
+  <label for="radio_test1">Radio 1:</label>
+  <input type="radio" id="radio_test1" name="radio_group">
+  <label for="radio_test2">Radio 2:</label>
+  <input type="radio" id="radio_test2" name="radio_group">
+  <br>
+  <label for="combo_test">ComboBox:</label>
+  <select id="combo_test">
+    <option value="1">Option 1</option>
+    <option value="2">Option 2</option>
+    <option value="3">Option 3</option>
+  </select>
+  <br>
+  <label for="listbox_test">ListBox:</label>
+  <select id="listbox_test" multiple>
+    <option value="A">Item A</option>
+    <option value="B">Item B</option>
+    <option value="C">Item C</option>
+  </select>
+  <br>
+  <button id="button_test">Click Me</button>
+  <br>
+  <label for="progress_test">Progress:</label>
+  <progress id="progress_test" value="50" max="100"></progress>
+  <br>
+  <label for="slider_test">Slider:</label>
+  <input type="range" id="slider_test" min="0" max="100" value="25">
+  <br>
+  <fieldset id="groupbox_test">
+    <legend>Group Box</legend>
+    <p>Grouped content here.</p>
+  </fieldset>
+  <br>
+  <div id="tab_test">
+    <button id="tab1">Tab 1</button>
+    <button id="tab2">Tab 2</button>
+    <div id="tab_content1">Tab 1 Content</div>
+    <div id="tab_content2" style="display:none;">Tab 2 Content</div>
+  </div>
 </body>
 </html>
-<input type="text" id="input_test" value="CopilotTest">

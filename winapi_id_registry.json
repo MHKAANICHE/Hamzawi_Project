@@ -6,5 +6,9 @@
   "radioA": 105,
   "radioB": 106,
   "slider1": 107,
-  "input_test": 108
+  "input_test": 108,
+  "checkbox_test": 109,
+  "radio_test1": 110,
+  "radio_test2": 111,
+  "slider_test": 112
 }
