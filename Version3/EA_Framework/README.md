@@ -119,3 +119,195 @@ These components handle specific technical aspects of the EA.
 - **EquityGuard**: Equity protection
 
 [... continued in next sections]
+
+GoldenCandleEA.mq4
+│
+├── Base Components (.mqh files) [IMMUTABLE]
+│   ├── Constants.mqh
+│   │   ├── TradeConstants
+│   │   ├── ErrorCodes
+│   │   ├── TimeConstants
+│   │   └── LimitConstants
+│   │
+│   ├── Enums.mqh
+│   │   ├── TradeEnums
+│   │   ├── StateEnums
+│   │   ├── SignalEnums
+│   │   └── ErrorEnums
+│   │
+│   ├── Structures.mqh
+│   │   ├── TradeStructs
+│   │   ├── SignalStructs
+│   │   ├── StateStructs
+│   │   └── ConfigStructs
+│   │
+│   ├── TerminalManager.mqh
+│   │   ├── BuildValidator
+│   │   ├── MemoryLimiter
+│   │   ├── ThreadController
+│   │   └── DLLValidator
+│   │
+│   ├── StateManager.mqh
+│   │   ├── TradingState
+│   │   ├── StrategyState
+│   │   ├── RecoveryState
+│   │   └── PersistentStorage
+│   │
+│   ├── IntegrityManager.mqh
+│   │   ├── DataValidator
+│   │   ├── ChecksumCalculator
+│   │   ├── StateVerifier
+│   │   └── BackupManager
+│   │
+│   ├── EventManager.mqh
+│   │   ├── EventDispatcher
+│   │   ├── EventQueue
+│   │   ├── SignalProcessor
+│   │   └── CallbackHandler
+│   │
+│   ├── LicenseManager.mqh
+│   │   ├── LicenseValidator
+│   │   ├── ExpirationHandler
+│   │   ├── UserAuthentication
+│   │   └── FeatureControl
+│   │
+│   └── Documentation.mqh
+│       ├── APIDocumentation
+│       ├── ErrorCatalog
+│       ├── ConfigGuide
+│       └── TroubleshootingGuide
+│
+├── Technical Components (.mqh files) [IMMUTABLE]
+│   ├── MarketDataManager.mqh
+│   │   ├── TickProcessor
+│   │   ├── PriceNormalizer
+│   │   ├── SpreadValidator
+│   │   └── GapDetector
+│   │
+│   ├── BrokerManager.mqh
+│   │   ├── SymbolValidator
+│   │   ├── SwapCalculator
+│   │   ├── CommissionHandler
+│   │   └── ServerTimeManager
+│   │
+│   ├── SignalCalculator.mqh
+│   │   ├── EMACalculator
+│   │   ├── PSARCalculator
+│   │   ├── CandleAnalyzer
+│   │   └── IndicatorCache
+│   │
+│   ├── OrderHandler.mqh
+│   │   ├── OrderValidator
+│   │   ├── OrderExecutor
+│   │   ├── OrderModifier
+│   │   └── OrderSynchronizer
+│   │
+│   ├── SafetyManager.mqh
+│   │   ├── SlippageGuard
+│   │   ├── RequoteHandler
+│   │   ├── SpreadProtector
+│   │   └── ExecutionValidator
+│   │
+│   ├── RiskValidator.mqh
+│   │   ├── MarginCalculator
+│   │   ├── ExposureMonitor
+│   │   ├── DrawdownTracker
+│   │   └── EquityGuard
+│   │
+│   ├── ResourceManager.mqh
+│   │   ├── MemoryMonitor
+│   │   ├── CalculationCache
+│   │   ├── IndicatorPool
+│   │   └── ObjectCleaner
+│   │
+│   ├── PerformanceManager.mqh
+│   │   ├── TickLatencyMonitor
+│   │   ├── ExecutionProfiler
+│   │   ├── ResourceOptimizer
+│   │   └── LoadBalancer
+│   │
+│   ├── MarketStateManager.mqh
+│   │   ├── VolatilityAnalyzer
+│   │   ├── TrendDetector
+│   │   ├── NewsFilter
+│   │   └── MarketHoursValidator
+│   │
+│   ├── CurrencyManager.mqh
+│   │   ├── BaseCurrencyConverter
+│   │   ├── CrossRateCalculator
+│   │   ├── MarginCurrencyHandler
+│   │   └── ProfitCalculator
+│   │
+│   ├── LogManager.mqh
+│   │   ├── ErrorLogger
+│   │   ├── TradeLogger
+│   │   ├── PerformanceLogger
+│   │   └── DebugLogger
+│   │
+│   ├── ChartManager.mqh
+│   │   ├── LevelDrawer
+│   │   ├── LineManager
+│   │   ├── LabelHandler
+│   │   └── ObjectManager
+│   │
+│   ├── HistoryManager.mqh
+│   │   ├── TradeHistoryLoader
+│   │   ├── PerformanceAnalyzer
+│   │   ├── StatisticsCalculator
+│   │   └── ReportGenerator
+│   │
+│   ├── RecoveryManager.mqh
+│   │   ├── ErrorRecovery
+│   │   ├── NetworkRecovery
+│   │   ├── StateRestorer
+│   │   └── EmergencyHandler
+│   │
+│   ├── ConfigManager.mqh
+│   │   ├── ParameterValidator
+│   │   ├── ConfigLoader
+│   │   ├── SettingsManager
+│   │   └── ProfileHandler
+│   │
+│   ├── SyncManager.mqh
+│   │   ├── TimeSync
+│   │   ├── DataSync
+│   │   ├── OrderSync
+│   │   └── StateSync
+│   │
+│   └── TestFramework.mqh
+│       ├── UnitTester
+│       ├── StrategyTester
+│       ├── PerformanceAnalyzer
+│       └── ResultValidator
+│
+├── Strategy Components (.mqh files) [FLEXIBLE]
+│   ├── StrategyBase.mqh
+│   │   ├── EntryRules
+│   │   ├── ExitRules
+│   │   ├── SignalProcessor
+│   │   └── StrategyValidator
+│   │
+│   ├── MoneyManager.mqh
+│   │   ├── LotCalculator
+│   │   ├── RiskManager
+│   │   ├── ProgressionHandler
+│   │   └── EquityManager
+│   │
+│   └── TradeManager.mqh
+│       ├── PositionManager
+│       ├── TrailingManager
+│       ├── HedgeManager
+│       └── BasketManager
+│
+└── UI Components (DLL interface) [FLEXIBLE]
+    ├── UserInterface.mqh
+    │   ├── ParameterManager
+    │   ├── ControlPanel
+    │   ├── InputValidator
+    │   └── SettingsPanel
+    │
+    └── AlertManager.mqh
+        ├── PopupManager
+        ├── EmailAlert
+        ├── PushNotification
+        └── SoundAlert
