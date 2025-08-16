@@ -1,20 +1,27 @@
 //+------------------------------------------------------------------+
 //|                                                          Constants.mqh |
-//|                                     Copyright 2025, MetaQuotes Ltd. |
-//|                                             https://www.mql5.com |
+//|                                           Copyright 2025, Golden Candle |
 //+------------------------------------------------------------------+
-
-#property copyright "Copyright 2025"
-#property link      "https://www.mql5.com"
+#property copyright "Copyright 2025, Golden Candle"
 #property strict
 
-//--- Trading Constants
-#define DEFAULT_MAGIC_NUMBER            123456
-#define DEFAULT_SLIPPAGE               3
-#define DEFAULT_SPREAD_LIMIT           20        // Maximum allowed spread in points
-#define MIN_LOTS                       0.01      // Minimum lot size
-#define MAX_LOTS                       100.0     // Maximum lot size
-#define DEFAULT_RISK_PERCENT           2.0       // Default risk per trade
+//--- Core Trading Constants
+#define DEFAULT_RISK_PERCENT        2.0       // Default risk percentage
+#define MIN_LOTS                    0.01      // Minimum lot size
+#define MAX_LOTS                    100.0     // Maximum lot size
+#define DEFAULT_MAGIC_NUMBER        7777      // Default magic number
+#define DEFAULT_SLIPPAGE           3         // Default maximum slippage
+#define DEFAULT_SPREAD_LIMIT       20        // Default maximum spread
+#define GOLDEN_CANDLE_ENTRY_OFFSET    3500      // Points from close for pending order
+#define DEFAULT_BASE_SL               10000      // Base stop loss in points
+#define DEFAULT_LOT_SIZE              0.01       // Fixed lot size
+#define MAX_SPLIT_ORDERS              3          // Maximum split orders per level
+#define MAX_LEVEL                     25         // Maximum trading level
+#define ONE_TRADE_AT_TIME            true       // Only one trade allowed at a time
+
+//--- Stop Loss Management
+#define BREAKEVEN_LEVEL               3          // Move to breakeven at 3rd target
+#define FIRST_LEVEL_MOVE             6          // Move to first level at 6th target
 
 //--- Golden Candle Parameters
 #define MIN_GOLDEN_CANDLE_SIZE        10        // Minimum size in points

@@ -143,5 +143,10 @@ mv GoldenCandleEA_GUI.dll ../../Delivery_Package/
 ## MT4 Folder On Wine 
 xdg-open "/home/hamdi/.mt4/dosdevices/c:/Program Files (x86)/MetaTrader 4"
 
+xdg-open ~/.mt4/dosdevices/c:/users/hamdi/AppData/Roaming/MetaQuotes/Terminal/50CA3DFB510CC5A8F28B48D1BF2A5702
+
 ## DLL built as a 32-bit version
 cd /workspaces/Hamzawi_Project/Version3/library && i686-w64-mingw32-g++ -shared -o PopupDLL.dll PopupDLL_no_rc.cpp -static -luser32 -lgdi32
+
+## build zip
+rm Version3.zip && zip -rv Version3.zip Version3/

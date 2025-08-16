@@ -8,7 +8,7 @@
 #property version   "3.0"
 #property strict
 
-#include "../EA_Framework/Tests/ComponentTests.mqh"
+#include "../Tests/ComponentTests.mqh"
 
 //+------------------------------------------------------------------+
 //| Script program start function                                      |

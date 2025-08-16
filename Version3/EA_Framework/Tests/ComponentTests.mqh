@@ -7,12 +7,15 @@
 #property link      "https://www.mql5.com"
 #property strict
 
-#include "TestFramework.mqh"
+
+
 #include "../Base/StateManager.mqh"
 #include "../Technical/SignalManager.mqh"
 #include "../Technical/TradeManager.mqh"
 #include "../Technical/MoneyManager.mqh"
 #include "../Strategy/GoldenCandleStrategy.mqh"
+#include "../Tests/TestFramework.mqh"
+
 
 //+------------------------------------------------------------------+
 //| Component Test Class                                               |

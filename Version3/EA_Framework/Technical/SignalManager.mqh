@@ -7,9 +7,11 @@
 #property link      "https://www.mql5.com"
 #property strict
 
-#include "../Base/Constants.mqh"
+
 #include "../Base/Enums.mqh"
+#include "../Base/Constants.mqh"
 #include "../Base/Structures.mqh"
+
 
 //+------------------------------------------------------------------+
 //| Signal Manager Class                                               |

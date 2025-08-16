@@ -1,28 +1,34 @@
 //+------------------------------------------------------------------+
 //|                                                   TradeManager.mqh |
-//|                                     Copyright 2025, MetaQuotes Ltd. |
-//|                                             https://www.mql5.com |
+//|                                           Copyright 2025, Golden Candle |
 //+------------------------------------------------------------------+
-#property copyright "Copyright 2025"
-#property link      "https://www.mql5.com"
+#property copyright "Copyright 2025, Golden Candle"
 #property strict
 
-#include "../Base/Constants.mqh"
+
+
 #include "../Base/Enums.mqh"
+#include "../Base/Constants.mqh"
 #include "../Base/Structures.mqh"
-#include "../Base/StateManager.mqh"
+
 
 //+------------------------------------------------------------------+
 //| Trade Manager Class                                                |
 //+------------------------------------------------------------------+
 class CTradeManager {
 private:
-    // Core properties
-    string            m_symbol;
-    double           m_lotSize;
-    int              m_slippage;
-    int              m_magicNumber;
-    bool             m_isInitialized;
+    // Level management
+    SLevelSetup m_currentLevel;         // Current level setup
+    int m_currentLevelNumber;           // Current level (1-25)
+    
+    // Trading state
+    ENUM_TRADING_STATE m_state;         // Current trading state
+    bool m_isBacktesting;              // Backtesting flag
+    string m_symbol;                   // Trading symbol
+    
+    // Order management
+    double m_fixedLotSize;             // Fixed lot size (0.01)
+    int m_baseStopLoss;               // Base stop loss in points
     
     // Risk management
     double           m_maxRiskPercent;

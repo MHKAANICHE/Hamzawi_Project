@@ -1,0 +1,3 @@
+/workspaces/Hamzawi_Project/Version3/EA_Framework_v2/DLL/build/CMakeFiles/GoldenCandleStrategy.dir
+/workspaces/Hamzawi_Project/Version3/EA_Framework_v2/DLL/build/CMakeFiles/edit_cache.dir
+/workspaces/Hamzawi_Project/Version3/EA_Framework_v2/DLL/build/CMakeFiles/rebuild_cache.dir

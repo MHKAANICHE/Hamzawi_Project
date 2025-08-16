@@ -1,30 +1,63 @@
 //+------------------------------------------------------------------+
-//|                                               GoldenCandleEA.mq4 |
-//|                                     Copyright 2025, MetaQuotes Ltd. |
-//|                                             https://www.mql5.com |
+//|                                                  bool              Init();
+    void              Deinit();
+    void              OnTick();
+    void              OnTimer();ldenCandleEA.mq4 |
+//|                                           Copyright 2025, Golden Candle |
 //+------------------------------------------------------------------+
-#property copyright "Copyright 2025"
-#property link      "https://www.mql5.com"
-#property version   "2.0"
+#property copyright "Copyright 2025, Golden Candle"
+#property version   "3.0"
 #property strict
 
-#include "../EA_Framework/Base/Constants.mqh"
-#include "../EA_Framework/Base/Enums.mqh"
-#include "../EA_Framework/Base/Structures.mqh"
-#include "../EA_Framework/Base/StateManager.mqh"
-#include "../EA_Framework/Technical/SignalManager.mqh"
-#include "../EA_Framework/Technical/TradeManager.mqh"
-#include "../EA_Framework/Technical/MoneyManager.mqh"
-#include "../EA_Framework/Strategy/GoldenCandleStrategy.mqh"
+// Import DLL functions
+#import "GoldenCandleEA.dll"
+   bool __stdcall InitStrategy();
+   void __stdcall DeinitStrategy();
+   bool __stdcall CheckEntryConditions();
+   bool __stdcall CheckExitConditions();
+   double __stdcall GetEntryPrice(int orderType);
+   void __stdcall SetGoldenCandleParams(SGoldenCandleParams& params);
+#import
+
+#include "../Base/Enums.mqh"
+#include "../Base/Constants.mqh"
+#include "../Base/Structures.mqh"
+#include "../Technical/TradeManager.mqh"
+
+// External constants
+#define EAName "GoldenCandleEA"
+#define MagicNumber 12345
+
+// Trade parameters
+extern double StopLoss = 100;        // Stop Loss in points
+extern double TakeProfit = 200;      // Take Profit in points
+
+// Forward declarations
+class CTradeManager;
 
 //+------------------------------------------------------------------+
-//| Global EA Parameters                                               |
+
+
+
+
 //+------------------------------------------------------------------+
-input string          GeneralSettings       = "=== General Settings ===";
-input string          EAName               = "GoldenCandle EA";
-input int             MagicNumber          = 202508;
-input ENUM_TIMEFRAMES OperatingTimeframe   = PERIOD_H1;
-input bool            EnableTrading        = true;
+//| External Parameters                                                |
+//+------------------------------------------------------------------+
+// Fixed Parameters
+extern double LotSize = 0.01;               // Fixed lot size
+
+// Parabolic SAR Parameters
+extern double SAR_Step = 0.001;             // Parabolic SAR Step
+extern double SAR_Maximum = 0.2;            // Parabolic SAR Maximum
+
+// Moving Average Parameters
+extern int FastMA_Period = 1;               // Fast MA Period
+extern int FastMA_Shift = 0;                // Fast MA Shift
+extern int SlowMA_Period = 3;               // Slow MA Period
+extern int SlowMA_Shift = 1;                // Slow MA Shift
+
+// Stop Loss Parameter
+extern int Base_SL = 10000;                 // Base stop loss in points
 
 input string          MoneyManagement      = "=== Money Management ===";
 input double          BaseRiskPercent      = 1.0;
@@ -52,28 +85,35 @@ input double          MomentumThreshold    = 0.1;
 //+------------------------------------------------------------------+
 //| Expert Advisor Class                                               |
 //+------------------------------------------------------------------+
+// EA State
+enum ENUM_EA_STATE {
+    STATE_RUNNING,
+    STATE_STOPPED
+};
+
+struct SGoldenCandleParams {
+    double bodyToWickRatio;
+    double minCandleSize;
+    double maxCandleSize;
+    double minVolumeMultiplier;
+    int volumeAvgPeriod;
+    int trendMAPeriod;
+    double trendStrength;
+    int momentumPeriod;
+    double momentumThreshold;
+};
+
 class CGoldenCandleEA {
 private:
-    // Component managers
-    CStateManager*      m_stateManager;
-    CSignalManager*     m_signalManager;
-    CTradeManager*      m_tradeManager;
-    CMoneyManager*      m_moneyManager;
-    CGoldenCandleStrategy* m_strategy;
-    
-    // EA properties
-    string             m_symbol;
-    ENUM_TIMEFRAMES    m_timeframe;
-    int                m_magicNumber;
     bool               m_isInitialized;
-    datetime           m_lastUpdateTime;
+    CTradeManager*     m_tradeManager;
+    SGoldenCandleParams m_params;
+    ENUM_EA_STATE      m_state;
     
     // Private methods
     bool               ValidateSettings();
     void              ProcessTrading();
     void              ManageOpenPositions();
-    void              CheckDailyLimits();
-    void              UpdateStats();
     string            GetStatusText();
     
 public:
@@ -84,11 +124,6 @@ public:
     bool              Init();
     void              Deinit();
     void              OnTick();
-    void              OnTimer();
-    
-    // Event handlers
-    void              OnTradeTransaction();
-    double            OnTester();
 };
 
 // Global EA instance
@@ -99,14 +134,7 @@ CGoldenCandleEA EA;
 //+------------------------------------------------------------------+
 CGoldenCandleEA::CGoldenCandleEA() {
     m_isInitialized = false;
-    m_lastUpdateTime = 0;
-    
-    // Initialize component pointers
-    m_stateManager = NULL;
-    m_signalManager = NULL;
     m_tradeManager = NULL;
-    m_moneyManager = NULL;
-    m_strategy = NULL;
 }
 
 //+------------------------------------------------------------------+
@@ -122,80 +150,35 @@ CGoldenCandleEA::~CGoldenCandleEA() {
 bool CGoldenCandleEA::Init() {
     if(m_isInitialized) return true;
     
-    Print("Initializing ", EAName, " v", __VERSION__);
-    
-    // Validate settings
-    if(!ValidateSettings()) {
-        Print("Failed to validate settings");
-        return false;
-    }
-    
-    // Initialize symbol and timeframe
-    m_symbol = Symbol();
-    m_timeframe = OperatingTimeframe;
-    m_magicNumber = MagicNumber;
-    
-    // Create component managers
-    m_stateManager = new CStateManager();
-    m_signalManager = new CSignalManager();
-    m_tradeManager = new CTradeManager();
-    m_moneyManager = new CMoneyManager();
-    m_strategy = new CGoldenCandleStrategy();
-    
-    // Initialize state manager
-    if(!m_stateManager.Init()) {
-        Print("Failed to initialize StateManager");
-        return false;
-    }
-    
-    // Initialize signal manager
-    if(!m_signalManager.Init(m_symbol, m_timeframe)) {
-        Print("Failed to initialize SignalManager");
-        return false;
-    }
-    
-    // Initialize money manager
-    if(!m_moneyManager.Init(m_stateManager)) {
-        Print("Failed to initialize MoneyManager");
-        return false;
-    }
-    
-    // Set money management parameters
-    m_moneyManager.SetRiskParameters(BaseRiskPercent, MaxRiskPercent, 
-                                   MaxDailyRisk, MaxDrawdown);
-    m_moneyManager.SetProfitTarget(DailyProfitTarget);
-    
     // Initialize trade manager
-    if(!m_tradeManager.Init(m_symbol, m_magicNumber, m_stateManager)) {
+    m_tradeManager = new CTradeManager();
+    if(!m_tradeManager.Init(Symbol(), MagicNumber)) {
         Print("Failed to initialize TradeManager");
         return false;
     }
     
-    // Initialize strategy
-    if(!m_strategy.Init(m_symbol, m_timeframe, m_signalManager, m_moneyManager)) {
-        Print("Failed to initialize Strategy");
+    // Initialize strategy parameters
+    m_params.bodyToWickRatio = BodyToWickRatio;
+    m_params.minCandleSize = MinCandleSize;
+    m_params.maxCandleSize = MaxCandleSize;
+    m_params.minVolumeMultiplier = MinVolumeMultiplier;
+    m_params.volumeAvgPeriod = VolumePeriod;
+    m_params.trendMAPeriod = TrendPeriod;
+    m_params.trendStrength = TrendStrength;
+    m_params.momentumPeriod = MomentumPeriod;
+    m_params.momentumThreshold = MomentumThreshold;
+    
+    // Initialize DLL strategy
+    if(!InitStrategy()) {
+        Print("Failed to initialize DLL strategy");
         return false;
     }
     
     // Set strategy parameters
-    SGoldenCandleParams strategyParams;
-    strategyParams.bodyToWickRatio = BodyToWickRatio;
-    strategyParams.minCandleSize = MinCandleSize;
-    strategyParams.maxCandleSize = MaxCandleSize;
-    strategyParams.minVolumeMultiplier = MinVolumeMultiplier;
-    strategyParams.volumeAvgPeriod = VolumePeriod;
-    strategyParams.trendMAPeriod = TrendPeriod;
-    strategyParams.trendStrength = TrendStrength;
-    strategyParams.momentumPeriod = MomentumPeriod;
-    strategyParams.momentumThreshold = MomentumThreshold;
-    
-    m_strategy.SetGoldenCandleParams(strategyParams);
-    
-    // Initialize timer for regular updates
-    EventSetTimer(1);
+    SetGoldenCandleParams(m_params);
     
     m_isInitialized = true;
-    Print(EAName, " initialized successfully");
+    Print("GoldenCandleEA initialized successfully");
     return true;
 }
 
@@ -205,59 +188,26 @@ bool CGoldenCandleEA::Init() {
 void CGoldenCandleEA::Deinit() {
     if(!m_isInitialized) return;
     
-    // Clean up timer
-    EventKillTimer();
+    // Deinitialize DLL strategy
+    DeinitStrategy();
     
-    // Clean up components
-    if(m_strategy != NULL) {
-        delete m_strategy;
-        m_strategy = NULL;
-    }
-    if(m_moneyManager != NULL) {
-        delete m_moneyManager;
-        m_moneyManager = NULL;
-    }
+    // Clean up trade manager
     if(m_tradeManager != NULL) {
         delete m_tradeManager;
         m_tradeManager = NULL;
     }
-    if(m_signalManager != NULL) {
-        delete m_signalManager;
-        m_signalManager = NULL;
-    }
-    if(m_stateManager != NULL) {
-        delete m_stateManager;
-        m_stateManager = NULL;
-    }
     
     m_isInitialized = false;
-    Print(EAName, " deinitialized");
 }
 
 //+------------------------------------------------------------------+
 //| Process tick event                                                |
 //+------------------------------------------------------------------+
 void CGoldenCandleEA::OnTick() {
-    if(!m_isInitialized || !EnableTrading) return;
+    if(!m_isInitialized) return;
     
-    // Update state and check if trading is allowed
-    m_stateManager.UpdateState();
-    if(!m_stateManager.IsTradeAllowed()) return;
-    
-    // Process trading logic
     ProcessTrading();
-    
-    // Manage open positions
     ManageOpenPositions();
-    
-    // Check daily limits
-    CheckDailyLimits();
-    
-    // Update statistics
-    UpdateStats();
-    
-    // Update status display
-    Comment(GetStatusText());
 }
 
 //+------------------------------------------------------------------+
@@ -266,94 +216,40 @@ void CGoldenCandleEA::OnTick() {
 void CGoldenCandleEA::OnTimer() {
     if(!m_isInitialized) return;
     
-    // Regular maintenance tasks
-    m_moneyManager.UpdateBalance();
-    m_strategy.OnTimer();
-    
-    // Reset daily stats at market close/open
-    static datetime lastResetTime = 0;
-    datetime currentTime = TimeCurrent();
-    
-    if(TimeHour(currentTime) == 0 && TimeHour(lastResetTime) != 0) {
-        m_moneyManager.ResetDailyStats();
-        lastResetTime = currentTime;
-    }
+    // Update parameters if needed
+    SetGoldenCandleParams(m_params);
 }
-
 //+------------------------------------------------------------------+
 //| Process trading logic                                             |
 //+------------------------------------------------------------------+
 void CGoldenCandleEA::ProcessTrading() {
-    // Check if we already have a position
-    if(m_tradeManager.HasOpenPosition()) return;
+    if(!m_tradeManager || m_tradeManager.HasOpenPosition()) return;
     
-    // Update signals
-    if(!m_signalManager.UpdateSignals()) return;
+    // Check entry conditions using DLL
+    if(!CheckEntryConditions()) return;
     
-    // Check entry conditions
-    if(!m_strategy.CheckEntryConditions()) return;
+    // Get entry price from DLL
+    double entryPrice = GetEntryPrice(OP_BUY); // or OP_SELL based on signal
+    if(entryPrice <= 0) return;
     
-    // Get current signal
-    SSignal* signal = m_signalManager.GetCurrentSignal();
-    if(signal == NULL || !signal.isValid) return;
-    
-    // Calculate entry price and stop loss
-    double entryPrice = m_strategy.GetEntryPrice(signal.type);
-    double stopLoss = m_strategy.CalculateStopLoss(signal.type);
+    // Calculate stop loss and take profit
+    double stopLoss = entryPrice - StopLoss * Point;
+    double takeProfit = entryPrice + TakeProfit * Point;
     
     // Open position
-    m_tradeManager.OpenPosition(signal.type, entryPrice, stopLoss);
+    m_tradeManager.OpenPosition(OP_BUY, LotSize, entryPrice, stopLoss, takeProfit);
 }
 
 //+------------------------------------------------------------------+
 //| Manage open positions                                             |
 //+------------------------------------------------------------------+
 void CGoldenCandleEA::ManageOpenPositions() {
-    if(!m_tradeManager.HasOpenPosition()) return;
+    if(!m_tradeManager || !m_tradeManager.HasOpenPosition()) return;
     
-    // Update position status
-    m_tradeManager.UpdatePosition();
-    
-    // Check exit conditions
-    if(m_strategy.CheckExitConditions()) {
+    // Check exit conditions using DLL
+    if(CheckExitConditions()) {
         m_tradeManager.ClosePosition();
-        return;
     }
-}
-
-//+------------------------------------------------------------------+
-//| Check daily trading limits                                        |
-//+------------------------------------------------------------------+
-void CGoldenCandleEA::CheckDailyLimits() {
-    // Check daily profit target
-    if(m_moneyManager.CheckProfitTarget()) {
-        if(m_tradeManager.HasOpenPosition()) {
-            m_tradeManager.ClosePosition();
-        }
-        m_stateManager.SetTradingState(STATE_STOPPED, "Daily profit target reached");
-        return;
-    }
-    
-    // Check drawdown limit
-    if(m_moneyManager.CheckDrawdownLimit()) {
-        if(m_tradeManager.HasOpenPosition()) {
-            m_tradeManager.ClosePosition();
-        }
-        m_stateManager.SetTradingState(STATE_STOPPED, "Maximum drawdown reached");
-        return;
-    }
-}
-
-//+------------------------------------------------------------------+
-//| Update trading statistics                                         |
-//+------------------------------------------------------------------+
-void CGoldenCandleEA::UpdateStats() {
-    if(!m_tradeManager.HasOpenPosition()) return;
-    
-    SPosition* pos = m_tradeManager.GetCurrentPosition();
-    if(pos == NULL) return;
-    
-    m_moneyManager.UpdateStats(pos.profit);
 }
 
 //+------------------------------------------------------------------+
@@ -362,24 +258,13 @@ void CGoldenCandleEA::UpdateStats() {
 string CGoldenCandleEA::GetStatusText() {
     string status = EAName + " Status\n";
     status += "==================\n";
-    status += "Trading State: " + EnumToString(m_stateManager.GetTradingState()) + "\n";
-    status += "State Reason: " + m_stateManager.GetStateReason() + "\n\n";
+    status += "State: " + (m_state == STATE_RUNNING ? "Running" : "Stopped") + "\n\n";
     
-    status += "Performance Metrics\n";
-    status += "==================\n";
-    SMoneyStats* stats = m_moneyManager.GetStats();
-    status += "Daily Profit: " + DoubleToString(stats.dailyProfit, 2) + "\n";
-    status += "Current Drawdown: " + DoubleToString(m_moneyManager.GetCurrentDrawdown(), 2) + "%\n";
-    status += "Max Drawdown: " + DoubleToString(stats.maxDrawdown, 2) + "%\n\n";
-    
-    if(m_tradeManager.HasOpenPosition()) {
-        SPosition* pos = m_tradeManager.GetCurrentPosition();
+    if(m_tradeManager && m_tradeManager.HasOpenPosition()) {
+        double profit = m_tradeManager.GetPositionProfit();
         status += "Open Position\n";
         status += "==================\n";
-        status += "Type: " + EnumToString(pos.type) + "\n";
-        status += "Profit: " + DoubleToString(pos.profit, 2) + "\n";
-        status += "SL: " + DoubleToString(pos.stopLoss, Digits) + "\n";
-        status += "TP: " + DoubleToString(pos.takeProfit, Digits) + "\n";
+        status += "Profit: " + DoubleToString(profit, 2) + "\n";
     }
     
     return status;

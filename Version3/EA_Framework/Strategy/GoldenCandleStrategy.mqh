@@ -1,35 +1,48 @@
 //+------------------------------------------------------------------+
 //|                                           GoldenCandleStrategy.mqh |
-//|                                     Copyright 2025, MetaQuotes Ltd. |
-//|                                             https://www.mql5.com |
+//|                                           Copyright 2025, Golden Candle |
 //+------------------------------------------------------------------+
-#property copyright "Copyright 2025"
-#property link      "https://www.mql5.com"
+#property copyright "Copyright 2025, Golden Candle"
 #property strict
 
-#include "StrategyBase.mqh"
+#include "../Base/Enums.mqh"
+#include "../Base/Constants.mqh"
+#include "../Base/Structures.mqh"
+#include "../Base/StrategyBase.mqh"
+
+// Forward declarations
+class CStrategyBase;
+
 
 //+------------------------------------------------------------------+
 //| Golden Candle Strategy Parameters                                  |
 //+------------------------------------------------------------------+
 struct SGoldenCandleParams {
-    // Candlestick pattern parameters
-    double           bodyToWickRatio;      // Minimum ratio of body to wick
-    double           minCandleSize;        // Minimum candle size in points
-    double           maxCandleSize;        // Maximum candle size in points
+    // SAR Parameters
+    double sarStep;             // SAR Step (default 0.001)
+    double sarMaximum;         // SAR Maximum (default 0.2)
     
-    // Volume parameters
-    double           minVolumeMultiplier;  // Minimum volume as multiplier of average
-    int             volumeAvgPeriod;      // Period for volume average calculation
+    // Moving Averages
+    int fastMAPeriod;         // Fast MA Period (default 1)
+    int fastMAShift;          // Fast MA Shift (default 0)
+    int slowMAPeriod;         // Slow MA Period (default 3)
+    int slowMAShift;          // Slow MA Shift (default 1)
     
-    // Trend parameters
-    int             trendMAPeriod;        // Period for trend MA
-    double           trendStrength;        // Minimum trend strength
+    // Entry Parameters
+    int entryOffset;          // Entry offset in points (default 3500)
+    int baseSL;              // Base stop loss in points (default 10000)
     
-    // Momentum parameters
-    int             momentumPeriod;       // Period for momentum calculation
-    double           momentumThreshold;     // Momentum threshold for entry
-    
+    // Candle pattern parameters
+    double bodyToWickRatio;    // Required ratio of body to wick
+    double minCandleSize;      // Minimum candle size in points
+    double maxCandleSize;      // Maximum candle size in points
+    double minVolumeMultiplier;// Required volume multiplier
+    int volumeAvgPeriod;      // Period for volume average
+    int trendMAPeriod;        // Period for trend MA
+    double trendStrength;      // Required trend strength
+    int momentumPeriod;       // Period for momentum
+    double momentumThreshold;  // Required momentum threshold
+
     void SetDefaults() {
         bodyToWickRatio = 2.0;
         minCandleSize = 10;
@@ -57,6 +70,9 @@ private:
     double           m_trendMA[];
     double           m_momentum[];
     
+    // Market data
+    MqlRates m_rates[];       // Price data array
+
     // Private methods
     bool             IsGoldenCandle(int index);
     bool             IsVolumeValid(int index);

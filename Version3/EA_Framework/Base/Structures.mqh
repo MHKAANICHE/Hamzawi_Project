@@ -1,25 +1,49 @@
 //+------------------------------------------------------------------+
 //|                                                       Structures.mqh |
-//|                                     Copyright 2025, MetaQuotes Ltd. |
-//|                                             https://www.mql5.com |
+//|                                           Copyright 2025, Golden Candle |
 //+------------------------------------------------------------------+
-
-#property copyright "Copyright 2025"
-#property link      "https://www.mql5.com"
+#property copyright "Copyright 2025, Golden Candle"
 #property strict
 
-#include "Enums.mqh"
-#include "Constants.mqh"
+#include "../Base/Enums.mqh"
+#include "../Base/Constants.mqh"
 
-//--- Signal Information Structure
+
+// Level Setup Structure for managing different trading levels
+struct SLevelSetup {
+    int level;                          // Trading level (1-25)
+    double baseLot;                     // Base lot size (always 0.01)
+    int numOrders;                      // Number of simultaneous orders
+    double rr[];                        // Risk:Reward ratios for each order
+    ENUM_ORDER_QUALIFICATION quals[];   // Qualification IDs for order identification
+    
+    void Clear() {
+        level = 0;
+        baseLot = 0.0;
+        numOrders = 0;
+        ArrayResize(rr, 0);
+        ArrayResize(quals, 0);
+    }
+    
+    void Init(const int _level, const double _baseLot, const int _numOrders) {
+        level = _level;
+        baseLot = _baseLot;
+        numOrders = _numOrders;
+        ArrayResize(rr, numOrders);
+        ArrayResize(quals, numOrders);
+    }
+};
+
+// Signal Information Structure
 struct SSignalInfo {
-    ENUM_SIGNAL_TYPE   type;           // Type of signal
-    datetime          time;           // Signal time
-    double            price;          // Signal price
-    double            stopLoss;       // Suggested stop loss
-    double            takeProfit;     // Suggested take profit
-    double            lots;           // Suggested lot size
-    string            description;    // Signal description
+    ENUM_SIGNAL_TYPE type;            // Type of signal (BUY/SELL)
+    datetime time;                    // Signal time
+    double price;                    // Signal price
+    double entryPrice;               // Pending order entry price (±3500 points)
+    double stopLoss;                 // Base stop loss (10000 points)
+    double takeProfit;               // Take profit based on R:R ratio
+    double lots;                     // Fixed lot size (0.01)
+    string comment;                  // Order qualification comment
     
     void Clear() {
         type = SIGNAL_NONE;

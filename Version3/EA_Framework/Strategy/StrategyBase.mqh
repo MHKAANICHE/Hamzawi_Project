@@ -7,11 +7,14 @@
 #property link      "https://www.mql5.com"
 #property strict
 
-#include "../Base/Constants.mqh"
+
 #include "../Base/Enums.mqh"
+#include "../Base/Constants.mqh"
 #include "../Base/Structures.mqh"
 #include "../Technical/SignalManager.mqh"
 #include "../Technical/MoneyManager.mqh"
+
+
 
 //+------------------------------------------------------------------+
 //| Strategy Base Class                                                |

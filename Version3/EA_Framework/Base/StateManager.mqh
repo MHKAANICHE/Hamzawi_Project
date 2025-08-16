@@ -8,9 +8,10 @@
 #property link      "https://www.mql5.com"
 #property strict
 
-#include "Enums.mqh"
-#include "Structures.mqh"
-#include "Constants.mqh"
+#include "../Base/Enums.mqh"
+#include "../Base/Structures.mqh"
+#include "../Base/Constants.mqh"
+
 
 //+------------------------------------------------------------------+
 //| State Manager Class                                                |

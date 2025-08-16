@@ -1,20 +1,36 @@
 //+------------------------------------------------------------------+
 //|                                                             Enums.mqh |
-//|                                     Copyright 2025, MetaQuotes Ltd. |
-//|                                             https://www.mql5.com |
+//|                                           Copyright 2025, Golden Candle |
 //+------------------------------------------------------------------+
-
-#property copyright "Copyright 2025"
-#property link      "https://www.mql5.com"
+#property copyright "Copyright 2025, Golden Candle"
 #property strict
+
+//--- Order Qualification for Split Orders
+enum ENUM_ORDER_QUALIFICATION {
+    LEVEL_1_MAIN = 1001,      // Single order levels (1-6)
+    LEVEL_7_FIRST = 7001,     // First order of level 7
+    LEVEL_7_SECOND = 7002,    // Second order of level 7
+    LEVEL_8_FIRST = 8001,     // First order of level 8
+    LEVEL_8_SECOND = 8002,    // Second order of level 8
+    LEVEL_9_FIRST = 9001,     // First order of level 9
+    LEVEL_9_SECOND = 9002,    // Second order of level 9
+    LEVEL_10_FIRST = 10001,   // First order of level 10
+    LEVEL_10_SECOND = 10002,  // Second order of level 10
+    LEVEL_11_FIRST = 11001,   // First order of level 11
+    LEVEL_11_SECOND = 11002,  // Second order of level 11
+    LEVEL_11_THIRD = 11003,   // Third order of level 11
+    LEVEL_12_FIRST = 12001,   // First order of level 12
+    LEVEL_12_SECOND = 12002,  // Second order of level 12
+    LEVEL_12_THIRD = 12003    // Third order of level 12
+};
 
 //--- Trading States
 enum ENUM_TRADING_STATE {
-    STATE_ACTIVE,              // Normal trading
-    STATE_SUSPENDED,           // Trading temporarily suspended
-    STATE_STOPPED,            // Trading stopped (emergency)
-    STATE_INITIALIZING,       // System initializing
-    STATE_ERROR               // Error state
+    STATE_INACTIVE = 0,       // Trading is paused
+    STATE_ACTIVE = 1,         // Trading is active
+    STATE_WAITING = 2,        // Waiting for signal
+    STATE_PENDING = 3,        // Pending order placed
+    STATE_IN_TRADE = 4        // In active trade
 };
 
 //--- Signal Types
