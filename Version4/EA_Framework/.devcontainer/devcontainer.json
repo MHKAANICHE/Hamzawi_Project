@@ -1,0 +1,7 @@
+{
+  "name": "EA Framework Dev",
+  "build": { "dockerfile": "Dockerfile" },
+  "settings": { "terminal.integrated.shell.linux": "/bin/bash" },
+  "features": {},
+  "postCreateCommand": "echo Ready"
+}

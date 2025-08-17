@@ -1,0 +1,3 @@
+/workspaces/Hamzawi_Project/Version4/EA_Framework/build_linux/CMakeFiles/ea_core.dir
+/workspaces/Hamzawi_Project/Version4/EA_Framework/build_linux/CMakeFiles/edit_cache.dir
+/workspaces/Hamzawi_Project/Version4/EA_Framework/build_linux/CMakeFiles/rebuild_cache.dir

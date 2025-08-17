@@ -1,0 +1,19 @@
+LIBRARY ea_core
+EXPORTS
+    EA_CreateContext@0
+    EA_DestroyContext@4
+    EA_Init@20
+    EA_Reset@4
+    EA_OnTick@24
+    EA_PlanOrdersCount@4
+    EA_PlanOrderGet@28
+    EA_OnOrderPlaced@12
+    EA_OnOrderFilled@16
+    EA_OnOrderClosed@16
+    EA_CurrentLevel@4
+    EA_ApplyLevel@8
+    EA_AdviseSL@16
+    EA_SetFlag@12
+    EA_SetParamDouble@16
+    EA_LastError@4
+    EA_Version@0

@@ -1,0 +1,18 @@
+EXPORTS
+    EA_AdviseSL = EA_AdviseSL@20 @1
+    EA_ApplyLevel = EA_ApplyLevel@8 @2
+    EA_CreateContext = EA_CreateContext@0 @3
+    EA_CurrentLevel = EA_CurrentLevel@4 @4
+    EA_DestroyContext = EA_DestroyContext@4 @5
+    EA_Init = EA_Init@24 @6
+    EA_LastError = EA_LastError@4 @7
+    EA_OnOrderClosed = EA_OnOrderClosed@16 @8
+    EA_OnOrderFilled = EA_OnOrderFilled@16 @9
+    EA_OnOrderPlaced = EA_OnOrderPlaced@12 @10
+    EA_OnTick = EA_OnTick@36 @11
+    EA_PlanOrderGet = EA_PlanOrderGet@28 @12
+    EA_PlanOrdersCount = EA_PlanOrdersCount@4 @13
+    EA_Reset = EA_Reset@4 @14
+    EA_SetFlag = EA_SetFlag@12 @15
+    EA_SetParamDouble = EA_SetParamDouble@16 @16
+    EA_Version = EA_Version@0 @17

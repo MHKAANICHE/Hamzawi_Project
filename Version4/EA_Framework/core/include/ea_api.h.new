@@ -1,0 +1,78 @@
+#pragma once
+#ifdef _WIN32
+  #define EA_API extern "C" __declspec(dllexport)
+  #define EA_CALL __stdcall
+#else
+  #define EA_API extern "C"
+  #define EA_CALL
+#endif
+
+#include <stdint.h>
+
+// ====== Actions returned to MQL4 shell ======
+enum EA_Action : int32_t {
+    EA_NONE = 0,
+    EA_PLAN_ORDERS = 10  // plan pending orders (BuyStop only per spec)
+};
+
+// ====== Order qualification (maps to spec) ======
+enum ORDER_QUALIFICATION : int32_t {
+    LEVEL_1_MAIN = 1001,
+    LEVEL_7_FIRST = 7001, LEVEL_7_SECOND = 7002,
+    LEVEL_8_FIRST = 8001, LEVEL_8_SECOND = 8002,
+    LEVEL_9_FIRST = 9001, LEVEL_9_SECOND = 9002,
+    LEVEL_10_FIRST=10001, LEVEL_10_SECOND=10002,
+    LEVEL_11_FIRST=11001, LEVEL_11_SECOND=11002, LEVEL_11_THIRD=11003,
+    LEVEL_12_FIRST=12001, LEVEL_12_SECOND=12002, LEVEL_12_THIRD=12003
+    // ... extend to 25 similarly if needed
+};
+
+// ====== Lifecycle ======
+EA_API int32_t  EA_CALL EA_CreateContext();
+EA_API void     EA_CALL EA_DestroyContext(int32_t handle);
+
+// Initialize runtime parameters (immutable client defaults inside DLL)
+EA_API int32_t  EA_CALL EA_Init(int32_t handle,
+                                const char* symbol,
+                                int32_t magic,
+                                int32_t digits,
+                                double  point);
+
+// Reset internal indicators/state (keeps level)
+EA_API void     EA_CALL EA_Reset(int32_t handle);
+
+// ====== Tick → plan orders ======
+// hasOpenPosition: pass 1 if MT4 detects any open/pending owned by this EA (single-trade enforcement)
+EA_API int32_t  EA_CALL EA_OnTick(int32_t handle,
+                                  double bid, double ask,
+                                  int64_t time_epoch_sec,
+                                  int32_t hasOpenPosition,
+                                  int32_t* action_out);
+
+// ====== Read planned orders after EA_PLAN_ORDERS ======
+EA_API int32_t  EA_CALL EA_PlanOrdersCount(int32_t handle);
+EA_API int32_t  EA_CALL EA_PlanOrderGet(int32_t handle, int32_t index,
+                                        double* entry_price,
+                                        double* sl,
+                                        double* tp,
+                                        double* lots,
+                                        int32_t* qualification_code);
+
+// ====== Report order lifecycle back to DLL ======
+EA_API void     EA_CALL EA_OnOrderPlaced(int32_t handle, int32_t ticket, int32_t qualification_code);
+EA_API void     EA_CALL EA_OnOrderFilled(int32_t handle, int32_t ticket, double fill_price);
+EA_API void     EA_CALL EA_OnOrderClosed(int32_t handle, int32_t ticket, int32_t closed_by_tp, int32_t closed_by_sl);
+
+// ====== Level state / SL advisory ======
+EA_API int32_t  EA_CALL EA_CurrentLevel(int32_t handle);                // 1..25
+EA_API void     EA_CALL EA_ApplyLevel(int32_t handle, int32_t level);   // manual select/skip
+EA_API int32_t  EA_CALL EA_AdviseSL(int32_t handle, double current_price,
+                                    double* new_sl_out, int32_t* should_modify_out);
+
+// ====== Runtime knobs (flexible) ======
+EA_API void     EA_CALL EA_SetFlag(int32_t handle, const char* key, int32_t value);   // e.g., "paused" 0/1
+EA_API void     EA_CALL EA_SetParamDouble(int32_t handle, const char* key, double value); // e.g., "min_spread_points"
+
+// ====== Diagnostics ======
+EA_API const char* EA_CALL EA_LastError(int32_t handle);
+EA_API const char* EA_CALL EA_Version();

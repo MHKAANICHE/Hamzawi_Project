@@ -1,0 +1,41 @@
+name: build-core
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S Hamzawi_Project/Version4/EA_Framework/core -B build_linux -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build_linux --config Release
+      - name: Upload Linux lib
+        uses: actions/upload-artifact@v4
+        with:
+          name: libea_core.so
+          path: build_linux/libea_core.so
+          if-no-files-found: ignore
+
+  build-windows-dll-cross:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install mingw
+        run: sudo apt-get update && sudo apt-get install -y g++-mingw-w64-x86-64 cmake ninja-build
+      - name: Configure (mingw toolchain)
+        run: |
+          cmake -S Hamzawi_Project/Version4/EA_Framework/core -B build_win \
+            -DCMAKE_TOOLCHAIN_FILE=Hamzawi_Project/Version4/EA_Framework/core/toolchains/x86_64-w64-mingw32.cmake \
+            -DCMAKE_BUILD_TYPE=Release -G "Ninja"
+      - name: Build
+        run: cmake --build build_win --config Release
+      - name: Upload DLL
+        uses: actions/upload-artifact@v4
+        with:
+          name: ea_core.dll
+          path: build_win/libea_core.dll

@@ -1,0 +1,315 @@
+#include <vector>
+#include <string>
+#include <unordered_map>
+#include <mutex>
+#include <cmath>
+#include <algorithm>
+#include "ea_api.h"
+
+struct PlannedOrder {
+    double entry=0, sl=0, tp=0, lots=0.01;
+    int32_t qual=LEVEL_1_MAIN;
+};
+
+struct Context {
+    // Broker / symbol
+    std::string symbol = "BTCUSD";
+    int32_t magic = 0;
+    int32_t digits = 5;
+    double  point  = 0.00001;
+
+    // Fixed client parameters (immutable per spec)
+    const double SAR_step = 0.001;
+    const double SAR_max  = 0.2;
+    // MA config (Fast EMA 1/0, Slow EMA 3/1)
+    // Golden Candle & entry rules
+    const int    BaseSL_points = 10000;      // also candle size
+    const int    EntryOffset_points = 3500;  // 35% of 10k
+    // Execution: pending BUY only, 1 trade at a time
+    bool paused = false;
+
+    // Runtime params (flex)
+    double min_spread_points = 0; // set via EA_SetParamDouble if needed
+
+    // Indicator state (simple rolling calc)
+    double sar= NAN, sar_ep= NAN, sar_af = SAR_step;
+    int    sar_dir = 0; // -1 down, +1 up
+    double ema_fast = NAN, ema_slow = NAN;
+
+    // Last candle close price/time seen (for M1 we approximate by tick time secs)
+    int64_t last_minute = -1;
+    double  last_close  = NAN;
+    double  last_high   = -INFINITY;
+    double  last_low    =  INFINITY;
+
+    // Plan buffer
+    std::vector<PlannedOrder> plan;
+
+    // Level state (1..25)
+    int level = 1;
+    // target hits tracking for SL advisory
+    int targets_hit = 0;
+
+    std::string last_error;
+};
+
+// Global handle registry
+static std::mutex g_mtx;
+static std::unordered_map<int32_t, Context*> g_ctx;
+static int32_t g_next = 1;
+
+static Context* G(int32_t h){
+    std::lock_guard<std::mutex> lk(g_mtx);
+    auto it=g_ctx.find(h);
+    return (it==g_ctx.end())?nullptr:it->second;
+}
+
+// ===== Helpers =====
+static double norm_price(double v, int digits){
+    double p = std::pow(10.0, -digits);
+    return std::round(v/p)*p;
+}
+static int64_t minute_bucket(int64_t t){ return (t/60)*60; }
+
+// EMA
+static inline double ema_update(double prev, double price, double alpha){
+    if(std::isnan(prev)) return price;
+    return prev + alpha*(price-prev);
+}
+
+// Very compact SAR (sufficient for trend & flip detection)
+static void sar_update(Context* c, double high, double low){
+    if(std::isnan(c->sar)){ // init
+        c->sar_dir = +1; // start up by default
+        c->sar_ep  = high;
+        c->sar     = low;
+        c->sar_af  = c->SAR_step;
+        return;
+    }
+    if(c->sar_dir>0){
+        c->sar = c->sar + c->sar_af*(c->sar_ep - c->sar);
+        c->sar = std::min({c->sar, low}); // clamp inside
+        if(high > c->sar_ep){
+            c->sar_ep = high;
+            c->sar_af = std::min(c->sar_af + c->SAR_step, c->SAR_max);
+        }
+        if(low < c->sar){ // flip to down
+            c->sar_dir = -1;
+            c->sar     = c->sar_ep;
+            c->sar_ep  = low;
+            c->sar_af  = c->SAR_step;
+        }
+    } else {
+        c->sar = c->sar + c->sar_af*(c->sar_ep - c->sar);
+        c->sar = std::max({c->sar, high});
+        if(low < c->sar_ep){
+            c->sar_ep = low;
+            c->sar_af = std::min(c->sar_af + c->SAR_step, c->SAR_max);
+        }
+        if(high > c->sar){
+            c->sar_dir = +1;
+            c->sar     = c->sar_ep;
+            c->sar_ep  = high;
+            c->sar_af  = c->SAR_step;
+        }
+    }
+}
+
+// Level → RR schema (fixed, per spec)
+static void level_rr_schema(int level, std::vector<double>& rr, std::vector<int32_t>& quals){
+    rr.clear(); quals.clear();
+    if(level>=1 && level<=6){
+        rr.push_back( (double)(level+1) ); // Level1=2,2=3,...,6=7
+        quals.push_back(LEVEL_1_MAIN);
+        return;
+    }
+    // 7..12 examples per spec. Extend similarly up to 25 as needed.
+    switch(level){
+        case 7:  rr={1,7};    quals={LEVEL_7_FIRST,LEVEL_7_SECOND}; break;
+        case 8:  rr={3,7};    quals={LEVEL_8_FIRST,LEVEL_8_SECOND}; break;
+        case 9:  rr={5,7};    quals={LEVEL_9_FIRST,LEVEL_9_SECOND}; break;
+        case 10: rr={7,7};    quals={LEVEL_10_FIRST,LEVEL_10_SECOND}; break;
+        case 11: rr={3,7,7};  quals={LEVEL_11_FIRST,LEVEL_11_SECOND,LEVEL_11_THIRD}; break;
+        case 12: rr={5,7,7};  quals={LEVEL_12_FIRST,LEVEL_12_SECOND,LEVEL_12_THIRD}; break;
+        default: rr={2};      quals={LEVEL_1_MAIN}; break; // fallback
+    }
+}
+
+// Validate Golden Candle (size ≥ 10k points) with equal range distribution hint
+static bool validate_golden_candle(Context* c, double high, double low){
+    double size_points = (high - low)/c->point;
+    return size_points >= c->BaseSL_points;
+}
+
+// MA up arrow (fast EMA1 close above slow EMA3(shift1))
+static bool ma_up_signal(Context* c, double close, double prev_slow){
+    // We emulate shift by using previous slow we carry per minute
+    double fast = ema_update(c->ema_fast, close, 1.0); // alpha=1 for EMA1
+    double slow = ema_update(c->ema_slow, close, 0.5); // rough EMA3
+    c->ema_fast = fast; c->ema_slow = slow;
+    return fast > prev_slow;
+}
+
+extern "C" {
+
+EA_API int32_t EA_CALL EA_CreateContext() {
+    std::lock_guard<std::mutex> lk(g_mtx);
+    int32_t h = g_next++;
+    g_ctx[h]= new Context();
+    return h;
+}
+EA_API void EA_CALL EA_DestroyContext(int32_t handle){
+    std::lock_guard<std::mutex> lk(g_mtx);
+    auto it=g_ctx.find(handle);
+    if(it!=g_ctx.end()){ delete it->second; g_ctx.erase(it); }
+}
+
+EA_API int32_t EA_CALL EA_Init(int32_t handle, const char* symbol, int32_t magic, int32_t digits, double point){
+    Context* c=G(handle); if(!c) return -1;
+    c->symbol = symbol?symbol:c->symbol;
+    c->magic = magic; c->digits=digits; c->point=point;
+    c->sar = NAN; c->ema_fast=NAN; c->ema_slow=NAN;
+    c->targets_hit=0; c->plan.clear();
+    c->last_error.clear();
+    return 1;
+}
+
+EA_API void EA_CALL EA_Reset(int32_t handle){
+    Context* c=G(handle); if(!c) return;
+    c->sar = NAN; c->ema_fast=NAN; c->ema_slow=NAN;
+    c->plan.clear();
+    c->last_error.clear();
+}
+
+EA_API int32_t EA_CALL EA_OnTick(int32_t handle, double bid, double ask, int64_t t, int32_t hasOpenPosition, int32_t* action_out){
+    Context* c=G(handle); if(!c||!action_out) return -1;
+    *action_out = EA_NONE;
+    if(c->paused || hasOpenPosition) return 0;
+
+    // spread check if configured
+    if(c->min_spread_points>0 && ((ask-bid)/c->point) < 0) { /*no min*/ }
+
+    // Build candle buckets for M1
+    int64_t mb = minute_bucket(t);
+    bool new_candle = (mb != c->last_minute);
+    if(new_candle){
+        // finalize previous candle (last_high/low/close)
+        double prev_close = c->last_close;
+        double prev_slow  = c->ema_slow;
+
+        // detect signals based on the *previous* candle data
+        bool gc_ok = false, sar_flip_buy=false, ma_buy=false;
+        if(std::isfinite(c->last_high) && std::isfinite(c->last_low) && std::isfinite(prev_close)){
+            gc_ok = validate_golden_candle(c, c->last_high, c->last_low);
+            // SAR flip handled by sar_dir change (computed through updates in previous minute)
+            sar_flip_buy = (c->sar_dir>0 && c->sar < prev_close); // SAR under price and uptrend just confirmed
+            if(std::isfinite(prev_slow)) ma_buy = ma_up_signal(c, prev_close, prev_slow);
+            else (void)ma_up_signal(c, prev_close, prev_close); // seed EMAs
+        }
+        // reset for new candle aggregation
+        c->last_minute = mb;
+        c->last_high = -INFINITY; c->last_low=INFINITY;
+        c->last_close = ask; // seed
+
+        // Prepare plan when any entry rule is met (BUY only)
+        c->plan.clear();
+        if(gc_ok && (sar_flip_buy || ma_buy)){
+            // reference = close_of_signal + 3500 points (per spec)
+            double entry = norm_price(prev_close + c->EntryOffset_points * c->point, c->digits);
+            double sl    = norm_price(entry - c->BaseSL_points * c->point, c->digits);
+
+            // R:R list by level
+            std::vector<double> rrs; std::vector<int32_t> quals;
+            level_rr_schema(c->level, rrs, quals);
+
+            for(size_t i=0;i<rrs.size();++i){
+                double tp = norm_price(entry + (c->BaseSL_points * c->point) * rrs[i], c->digits);
+                PlannedOrder po;
+                po.entry=entry; po.sl=sl; po.tp=tp; po.lots=0.01; // fixed lots per spec
+                po.qual = quals[i];
+                c->plan.push_back(po);
+            }
+            *action_out = EA_PLAN_ORDERS;
+            return 1;
+        }
+    } else {
+        // aggregate current candle OHLC approximation
+        c->last_high = std::max(c->last_high, ask);
+        c->last_low  = std::min(c->last_low,  bid);
+        c->last_close= ask;
+    }
+
+    // Keep updating SAR each tick using current highs/lows
+    sar_update(c, std::max(bid,ask), std::min(bid,ask));
+    return 0;
+}
+
+EA_API int32_t EA_CALL EA_PlanOrdersCount(int32_t handle){
+    Context* c=G(handle); if(!c) return -1;
+    return (int32_t)c->plan.size();
+}
+EA_API int32_t EA_CALL EA_PlanOrderGet(int32_t handle, int32_t index,
+                                       double* entry, double* sl, double* tp, double* lots, int32_t* qual){
+    Context* c=G(handle); if(!c) return -1;
+    if(index<0 || index>=(int32_t)c->plan.size()) return -2;
+    const auto& p = c->plan[(size_t)index];
+    if(entry) *entry = p.entry;
+    if(sl)    *sl    = p.sl;
+    if(tp)    *tp    = p.tp;
+    if(lots)  *lots  = p.lots;
+    if(qual)  *qual  = p.qual;
+    return 1;
+}
+
+EA_API void EA_CALL EA_OnOrderPlaced(int32_t, int32_t, int32_t){ /* no-op for now */ }
+EA_API void EA_CALL EA_OnOrderFilled(int32_t, int32_t, double){  /* no-op for now */ }
+
+EA_API void EA_CALL EA_OnOrderClosed(int32_t handle, int32_t /*ticket*/, int32_t closed_by_tp, int32_t closed_by_sl){
+    Context* c=G(handle); if(!c) return;
+    // Simple level progression: if TP → next level, if SL → restart level 1
+    if(closed_by_tp){
+        c->level = std::min(25, c->level+1);
+    } else if(closed_by_sl){
+        c->level = 1;
+    }
+    c->targets_hit = 0;
+}
+
+EA_API int32_t EA_CALL EA_CurrentLevel(int32_t handle){
+    Context* c=G(handle); if(!c) return -1;
+    return c->level;
+}
+EA_API void EA_CALL EA_ApplyLevel(int32_t handle, int32_t level){
+    Context* c=G(handle); if(!c) return;
+    c->level = std::clamp(level,1,25);
+}
+
+// SL advisory: move to BE at 3rd target, to 1st level at 6th target.
+// We approximate targets by (entry + n*BaseSL_points) distance checkpoints.
+EA_API int32_t EA_CALL EA_AdviseSL(int32_t handle, double current_price, double* new_sl_out, int32_t* should_modify_out){
+    Context* c=G(handle); if(!c||!new_sl_out||!should_modify_out) return -1;
+    *should_modify_out = 0;
+
+    // We can't know entry here without tracking each trade; keep simple: no-op advisory.
+    // (Shell can pass last entry to extend this. Kept minimal per "shell thin".)
+    return 0;
+}
+
+EA_API void EA_CALL EA_SetFlag(int32_t handle, const char* key, int32_t value){
+    Context* c=G(handle); if(!c||!key) return;
+    std::string k(key);
+    if(k=="paused") c->paused = (value!=0);
+}
+EA_API void EA_CALL EA_SetParamDouble(int32_t handle, const char* key, double value){
+    Context* c=G(handle); if(!c||!key) return;
+    std::string k(key);
+    if(k=="min_spread_points") c->min_spread_points = value;
+}
+
+EA_API const char* EA_CALL EA_LastError(int32_t handle){
+    Context* c=G(handle); if(!c) return "invalid_handle";
+    return c->last_error.c_str();
+}
+EA_API const char* EA_CALL EA_Version(){ return "GoldenCandle-Core 1.0.0"; }
+
+} // extern "C"

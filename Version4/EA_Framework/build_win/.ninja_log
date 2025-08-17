@@ -1,0 +1,5 @@
+# ninja log v5
+794	821	1755389077233775276	libea_core.dll.a	a0db0019516ff0e
+794	821	1755389077233775276	libea_core.dll	a0db0019516ff0e
+1	794	1755389077206775274	CMakeFiles/ea_core.dir/src/state.cpp.obj	b5875b7713db30c2
+2	25	1755389076437775213	CMakeFiles/ea_core.dir/src/ea_core.cpp.obj	4cfb1acdfb9122e1
