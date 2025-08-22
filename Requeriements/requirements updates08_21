@@ -1,0 +1,17 @@
+hi ...
+these are the major mistakes:
+1- when I open EA on the chart, the EA will work directly. It should ignore any entry and wait for the next entry from the PSAR.
+2- when I got profit, the EA will continue to open new trades. This is mistake. It must not open new trades unless PSAR has changed direction.
+3- the rule of 35% is only for the first way of entry not with the second way entry.
+4- The ratio of profit to stop lose must be different.
+If you enter first trade it will be 1:2 ratio, this is good.
+If you win the trade, then you go back to the same ratio 1:2.
+If you lose the trade, then you go to the ratio table.
+So it will not be all the time 1:2 ratio.
+For example,
+If you enter a trade 1:2 ratio (-$1 to $2),
+and if you lose it, you will enter another trade 1:3 ratio,
+and if you lose it, you will enter another trade 1:4 ratio,
+and if you win complete 4 ratios, it means the chain of entries has been ended at this point. So for new entry you will go back from 1:2 ratio.
+
+Please note: any entries (Buy/Sell) that I stated must follow the rules of first and second way of entries.
